@@ -64,7 +64,6 @@ async function buildTree(entries: FileEntry[], rootDir: string, includeSymbols: 
           node.symbols = analysis.symbols.map((s) => formatSymbol(s, 0)).join("\n");
         }
       } catch {
-        /* unreadable file */
       }
     }
     parent.children.push(node);

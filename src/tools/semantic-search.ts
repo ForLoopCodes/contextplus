@@ -1,5 +1,5 @@
-// Local semantic search using TF-IDF over file headers and symbol names
-// Zero API calls, matches concepts by vocabulary similarity scoring
+// Ollama-powered semantic search over file headers and symbol names
+// Uses vector embeddings with cosine similarity for concept matching
 
 import { walkDirectory } from "../core/walker.js";
 import { analyzeFile, isSupportedFile } from "../core/parser.js";
@@ -15,7 +15,7 @@ let cachedIndex: SearchIndex | null = null;
 let cachedRootDir: string | null = null;
 let lastIndexTime = 0;
 
-const INDEX_TTL_MS = 30000;
+const INDEX_TTL_MS = 60000;
 
 async function buildIndex(rootDir: string): Promise<SearchIndex> {
   if (cachedIndex && cachedRootDir === rootDir && Date.now() - lastIndexTime < INDEX_TTL_MS) {
@@ -36,12 +36,11 @@ async function buildIndex(rootDir: string): Promise<SearchIndex> {
         content: analysis.symbols.map((s) => s.signature).join(" "),
       });
     } catch {
-      /* skip unreadable */
     }
   }
 
   const index = new SearchIndex();
-  index.index(docs);
+  await index.index(docs, rootDir);
   cachedIndex = index;
   cachedRootDir = rootDir;
   lastIndexTime = Date.now();
@@ -51,7 +50,7 @@ async function buildIndex(rootDir: string): Promise<SearchIndex> {
 
 export async function semanticCodeSearch(options: SemanticSearchOptions): Promise<string> {
   const index = await buildIndex(options.rootDir);
-  const results = index.search(options.query, options.topK ?? 5);
+  const results = await index.search(options.query, options.topK ?? 5);
 
   if (results.length === 0) return "No matching files found for the given query.";
 
@@ -59,7 +58,7 @@ export async function semanticCodeSearch(options: SemanticSearchOptions): Promis
 
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
-    lines.push(`${i + 1}. ${r.path} (score: ${r.score})`);
+    lines.push(`${i + 1}. ${r.path} (${r.score}% match)`);
     if (r.header) lines.push(`   Header: ${r.header}`);
     if (r.matchedSymbols.length > 0) lines.push(`   Matched symbols: ${r.matchedSymbols.join(", ")}`);
     lines.push("");

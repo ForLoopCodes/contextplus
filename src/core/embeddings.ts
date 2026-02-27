@@ -1,5 +1,8 @@
-// TF-IDF based local semantic search for file headers and symbols
-// Zero external API calls, indexes 2-line headers with BM25 scoring
+// Ollama-powered vector embedding engine with cosine similarity search
+// Indexes file headers and symbols, caches embeddings to disk for speed
+
+import { readFile, writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 
 export interface SearchDocument {
   path: string;
@@ -15,19 +18,30 @@ export interface SearchResult {
   matchedSymbols: string[];
 }
 
-interface TermFrequency {
-  [term: string]: number;
+interface EmbeddingCache {
+  [path: string]: { hash: string; vector: number[] };
 }
 
-const BM25_K1 = 1.5;
-const BM25_B = 0.75;
+const OLLAMA_URL = process.env.OLLAMA_URL ?? "http://localhost:11434";
+const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
+const CACHE_DIR = ".mcp_data";
+const CACHE_FILE = "embeddings-cache.json";
 
-function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, " ")
-    .split(/\s+/)
-    .filter((t) => t.length > 1);
+function hashContent(text: string): string {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) - h + text.charCodeAt(i)) | 0;
+  return h.toString(36);
+}
+
+function cosine(a: number[], b: number[]): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
 }
 
 function splitCamelCase(text: string): string[] {
@@ -39,74 +53,91 @@ function splitCamelCase(text: string): string[] {
     .filter((t) => t.length > 1);
 }
 
-function computeTF(tokens: string[]): TermFrequency {
-  const tf: TermFrequency = {};
-  for (const token of tokens) tf[token] = (tf[token] ?? 0) + 1;
-  return tf;
+async function fetchEmbedding(input: string | string[]): Promise<number[][]> {
+  const res = await fetch(`${OLLAMA_URL}/api/embed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: EMBED_MODEL, input }),
+  });
+
+  if (!res.ok) throw new Error(`Ollama embed failed: ${res.status} ${await res.text()}`);
+  const data = await res.json() as { embeddings: number[][] };
+  return data.embeddings;
+}
+
+async function loadCache(rootDir: string): Promise<EmbeddingCache> {
+  try {
+    return JSON.parse(await readFile(join(rootDir, CACHE_DIR, CACHE_FILE), "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+async function saveCache(rootDir: string, cache: EmbeddingCache): Promise<void> {
+  await mkdir(join(rootDir, CACHE_DIR), { recursive: true });
+  await writeFile(join(rootDir, CACHE_DIR, CACHE_FILE), JSON.stringify(cache));
 }
 
 export class SearchIndex {
   private documents: SearchDocument[] = [];
-  private documentTFs: TermFrequency[] = [];
-  private idf: TermFrequency = {};
-  private avgDocLength = 0;
+  private vectors: number[][] = [];
+  private rootDir = "";
 
-  index(docs: SearchDocument[]): void {
+  async index(docs: SearchDocument[], rootDir: string): Promise<void> {
     this.documents = docs;
-    const docFreq: TermFrequency = {};
-    const allTFs: TermFrequency[] = [];
+    this.rootDir = rootDir;
+    const cache = await loadCache(rootDir);
+    const uncached: { idx: number; text: string; hash: string }[] = [];
 
-    let totalTokens = 0;
-    for (const doc of docs) {
-      const tokens = [
-        ...tokenize(doc.header),
-        ...doc.symbols.flatMap(splitCamelCase),
-        ...tokenize(doc.content),
-      ];
-      const tf = computeTF(tokens);
-      allTFs.push(tf);
-      totalTokens += tokens.length;
-      for (const term of new Set(tokens)) docFreq[term] = (docFreq[term] ?? 0) + 1;
+    this.vectors = new Array(docs.length);
+
+    for (let i = 0; i < docs.length; i++) {
+      const doc = docs[i];
+      const text = `${doc.header} ${doc.symbols.join(" ")} ${doc.content}`;
+      const hash = hashContent(text);
+
+      if (cache[doc.path]?.hash === hash) {
+        this.vectors[i] = cache[doc.path].vector;
+      } else {
+        uncached.push({ idx: i, text, hash });
+      }
     }
 
-    this.documentTFs = allTFs;
-    this.avgDocLength = docs.length > 0 ? totalTokens / docs.length : 0;
-
-    const n = docs.length;
-    for (const [term, df] of Object.entries(docFreq)) {
-      this.idf[term] = Math.log((n - df + 0.5) / (df + 0.5) + 1);
+    if (uncached.length > 0) {
+      const batchSize = 32;
+      for (let b = 0; b < uncached.length; b += batchSize) {
+        const batch = uncached.slice(b, b + batchSize);
+        const embeddings = await fetchEmbedding(batch.map((u) => u.text));
+        for (let j = 0; j < batch.length; j++) {
+          this.vectors[batch[j].idx] = embeddings[j];
+          cache[docs[batch[j].idx].path] = { hash: batch[j].hash, vector: embeddings[j] };
+        }
+      }
+      await saveCache(rootDir, cache);
     }
   }
 
-  search(query: string, topK: number = 5): SearchResult[] {
-    const queryTokens = [...tokenize(query), ...splitCamelCase(query)];
+  async search(query: string, topK: number = 5): Promise<SearchResult[]> {
+    const [queryVec] = await fetchEmbedding(query);
     const scores: { idx: number; score: number }[] = [];
 
-    for (let i = 0; i < this.documents.length; i++) {
-      const tf = this.documentTFs[i];
-      const docLen = Object.values(tf).reduce((a, b) => a + b, 0);
-      let score = 0;
-
-      for (const term of queryTokens) {
-        const termTF = tf[term] ?? 0;
-        const termIDF = this.idf[term] ?? 0;
-        score += termIDF * ((termTF * (BM25_K1 + 1)) / (termTF + BM25_K1 * (1 - BM25_B + (BM25_B * docLen) / this.avgDocLength)));
-      }
-
-      if (score > 0) scores.push({ idx: i, score });
+    for (let i = 0; i < this.vectors.length; i++) {
+      if (!this.vectors[i]) continue;
+      const score = cosine(queryVec, this.vectors[i]);
+      if (score > 0.1) scores.push({ idx: i, score });
     }
 
+    const queryTerms = new Set(splitCamelCase(query));
     return scores
       .sort((a, b) => b.score - a.score)
       .slice(0, topK)
       .map(({ idx, score }) => {
         const doc = this.documents[idx];
-        const querySet = new Set(queryTokens);
         return {
           path: doc.path,
-          score: Math.round(score * 100) / 100,
+          score: Math.round(score * 1000) / 10,
           header: doc.header,
-          matchedSymbols: doc.symbols.filter((s) => splitCamelCase(s).some((t) => querySet.has(t))),
+          matchedSymbols: doc.symbols.filter((s) => splitCamelCase(s).some((t) => queryTerms.has(t))),
         };
       });
   }

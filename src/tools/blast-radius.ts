@@ -43,7 +43,6 @@ export async function getBlastRadius(options: BlastRadiusOptions): Promise<strin
         }
       }
     } catch {
-      /* skip unreadable */
     }
   }
 

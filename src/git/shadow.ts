@@ -48,7 +48,6 @@ export async function createRestorePoint(rootDir: string, files: string[], messa
       const backupPath = join(backupDir, file.replace(/[\\/]/g, "__"));
       await writeFile(backupPath, content);
     } catch {
-      /* file might not exist yet */
     }
   }
 
@@ -78,7 +77,6 @@ export async function restorePoint(rootDir: string, pointId: string): Promise<st
       await writeFile(targetPath, content);
       restoredFiles.push(file);
     } catch {
-      /* backup might not exist */
     }
   }
 
@@ -111,7 +109,7 @@ export async function shadowCommit(rootDir: string, message: string): Promise<bo
         await git.checkout(currentBranch);
       } catch (e) {
         await git.checkout(currentBranch);
-        try { await git.stash(["pop"]); } catch { /* already popped */ }
+        try { await git.stash(["pop"]); } catch { }
         return false;
       }
     }

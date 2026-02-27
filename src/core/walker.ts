@@ -44,7 +44,6 @@ async function loadIgnoreRules(rootDir: string): Promise<Ignore> {
     const content = await readFile(join(rootDir, ".gitignore"), "utf-8");
     ig.add(content);
   } catch {
-    /* no gitignore */
   }
   return ig;
 }
