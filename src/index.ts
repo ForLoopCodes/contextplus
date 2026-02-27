@@ -3,6 +3,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { resolve } from "path";
 import { z } from "zod";
 import { getContextTree } from "./tools/context-tree.js";
 import { getFileSkeleton } from "./tools/file-skeleton.js";
@@ -14,7 +15,7 @@ import { listRestorePoints, restorePoint } from "./git/shadow.js";
 import { semanticNavigate } from "./tools/semantic-navigate.js";
 import { getFeatureHub } from "./tools/feature-hub.js";
 
-const ROOT_DIR = process.cwd();
+const ROOT_DIR = process.argv[2] ? resolve(process.argv[2]) : process.cwd();
 
 const server = new McpServer({
   name: "contextual",
@@ -210,7 +211,7 @@ server.tool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Contextual MCP server running on stdio");
+  console.error(`Contextual MCP server running on stdio | root: ${ROOT_DIR}`);
 }
 
 main().catch((error) => {

@@ -34,7 +34,7 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 
 - `shadow.ts` — Shadow restore point system for undo without touching git history.
 
-**Entry Point**: `src/index.ts` registers 10 MCP tools and starts the stdio transport.
+**Entry Point**: `src/index.ts` registers 10 MCP tools and starts the stdio transport. Accepts an optional CLI argument for the target project root directory (defaults to `process.cwd()`).
 
 ## Environment Variables
 

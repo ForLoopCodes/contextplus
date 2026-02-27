@@ -22,6 +22,27 @@ npm install
 npm run build
 ```
 
+## Usage
+
+By default, contextual analyzes the directory it's launched from (`process.cwd()`).
+To point it at a different project, pass the path as the first argument:
+
+```bash
+# Analyze current directory
+node build/index.js
+
+# Analyze a specific project
+node build/index.js /path/to/my-project
+
+# In MCP config (Claude Desktop / VS Code)
+{
+  "contextual": {
+    "command": "node",
+    "args": ["/path/to/contextual/build/index.js", "/path/to/target-project"]
+  }
+}
+```
+
 ## Config
 
 | Env Var              | Default            | Purpose                           |
@@ -33,5 +54,7 @@ npm run build
 ## Test
 
 ```bash
-node --test test/*.test.mjs
+npm test
+npm run test:demo
+npm run test:all
 ```
