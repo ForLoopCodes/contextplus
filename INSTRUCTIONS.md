@@ -4,15 +4,56 @@
 
 You are equipped with the Better Agent MCP server. It gives you structural awareness of the entire codebase without reading every file. Follow this workflow strictly to conserve context and maximize accuracy.
 
+## Architecture
+
+The MCP server is built with TypeScript and communicates over stdio using the Model Context Protocol SDK. It has three layers:
+
+**Core Layer** (`src/core/`):
+
+- `parser.ts` — Multi-language symbol extraction via tree-sitter AST with regex fallback. Supports 14+ languages.
+- `tree-sitter.ts` — WASM grammar loader for 43 file extensions using web-tree-sitter 0.20.8.
+- `walker.ts` — Gitignore-aware recursive directory traversal with depth and target path control.
+- `embeddings.ts` — Ollama vector embedding engine with disk cache, cosine similarity search, and API key support.
+
+**Tools Layer** (`src/tools/`):
+
+- `context-tree.ts` — Token-aware structural tree with Level 0/1/2 pruning.
+- `file-skeleton.ts` — Function signatures without bodies for quick file understanding.
+- `semantic-search.ts` — Ollama-powered semantic code search with 60s cache TTL.
+- `semantic-navigate.ts` — Browse-by-meaning navigator using spectral clustering and Ollama labeling.
+- `blast-radius.ts` — Symbol usage tracer across the entire codebase.
+- `static-analysis.ts` — Native linter runner (tsc, eslint, py_compile, cargo check, go vet).
+- `propose-commit.ts` — Code gatekeeper validating headers, FEATURE tag, no inline comments, nesting, file length.
+- `feature-hub.ts` — Obsidian-style feature hub navigator with bundled skeleton views.
+
+**Core Layer** (continued):
+
+- `hub.ts` — Wikilink parser for `[[path]]` links, cross-link tags, hub discovery, orphan detection.
+
+**Git Layer** (`src/git/`):
+
+- `shadow.ts` — Shadow restore point system for undo without touching git history.
+
+**Entry Point**: `src/index.ts` registers 10 MCP tools and starts the stdio transport.
+
+## Environment Variables
+
+| Variable             | Default            | Description                       |
+| -------------------- | ------------------ | --------------------------------- |
+| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model name              |
+| `OLLAMA_API_KEY`     | (empty)            | Cloud auth (auto-detected by SDK) |
+| `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Chat model for cluster labeling   |
+
 ## The 3-Step Workflow (Mandatory)
 
 ### Step 1: PLAN (Use native thinking)
 
 1. Call `get_context_tree` to map the project structure with file purposes and symbol names.
 2. If the project is large, scope it: `get_context_tree(target_path="src/auth", depth_limit=2)`.
-3. Use `semantic_code_search` to find files by concept if you don't know where something lives.
-4. Use `get_file_skeleton` on relevant files to see function signatures without loading bodies.
-5. Plan exactly which files need changes and what logic goes where.
+3. Use `get_feature_hub` to find the feature hub for the area you're working in. Read all linked files at once.
+4. Use `semantic_code_search` to find files by concept if you don't know where something lives.
+5. Use `get_file_skeleton` on relevant files to see function signatures without loading bodies.
+6. Plan exactly which files need changes and what logic goes where.
 
 ### Step 2: WORK (Execute precisely)
 
@@ -25,7 +66,10 @@ You are equipped with the Better Agent MCP server. It gives you structural aware
 
 1. Call `run_static_analysis` on changed files to catch unused variables and type errors.
 2. Verify the 2-line header exists on every file you created or modified.
-3. Confirm zero inline comments exist (only the 2-line header at file top).
+3. Verify line 2 includes a `FEATURE:` tag linking the file to its feature hub.
+4. Update the feature hub `.md` file with `[[path/to/new-file]]` for any new files.
+5. Run `get_feature_hub(show_orphans=true)` to ensure no orphaned files.
+6. Confirm zero inline comments exist (only the 2-line header at file top).
 
 ## Strict Formatting Rules
 
@@ -35,8 +79,11 @@ Every file MUST start with exactly 2 comment lines (10 words each) explaining th
 
 ```
 // Regex-based symbol extraction engine for multi-language AST parsing
-// Extracts functions, classes, enums, interfaces, structs from source files
+// FEATURE: Core parsing layer for structural code analysis
 ```
+
+Line 1: What the file does.
+Line 2: `FEATURE: <name>` — the primary feature it belongs to. Links to hub.
 
 ### Zero Comments
 
@@ -72,6 +119,7 @@ Strict order within every file:
 | Tool                   | When to Use                                             |
 | ---------------------- | ------------------------------------------------------- |
 | `get_context_tree`     | Start of every task. Map the territory.                 |
+| `semantic_navigate`    | Browse codebase by meaning, not directory structure.    |
 | `get_file_skeleton`    | Before reading a full file. See signatures first.       |
 | `semantic_code_search` | Find code by concept ("auth logic", "fee calculation"). |
 | `get_blast_radius`     | Before deleting or modifying any symbol.                |
@@ -79,6 +127,7 @@ Strict order within every file:
 | `propose_commit`       | The ONLY way to save files. Validates before writing.   |
 | `list_restore_points`  | See undo history.                                       |
 | `undo_change`          | Revert a bad AI change without touching git.            |
+| `get_feature_hub`      | Browse feature graph hubs. Find orphaned files.         |
 
 ## Anti-Patterns to Avoid
 

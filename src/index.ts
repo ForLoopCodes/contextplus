@@ -11,6 +11,8 @@ import { getBlastRadius } from "./tools/blast-radius.js";
 import { runStaticAnalysis } from "./tools/static-analysis.js";
 import { proposeCommit } from "./tools/propose-commit.js";
 import { listRestorePoints, restorePoint } from "./git/shadow.js";
+import { semanticNavigate } from "./tools/semantic-navigate.js";
+import { getFeatureHub } from "./tools/feature-hub.js";
 
 const ROOT_DIR = process.cwd();
 
@@ -63,8 +65,8 @@ server.tool(
 
 server.tool(
   "semantic_code_search",
-  "Search the codebase by MEANING, not just exact variable names. Uses TF-IDF over file headers and symbol names. " +
-  "Example: searching 'user authentication' finds files about login, sessions, JWT even if those exact words aren't used. Zero API calls.",
+  "Search the codebase by MEANING, not just exact variable names. Uses Ollama embeddings over file headers and symbol names. " +
+  "Example: searching 'user authentication' finds files about login, sessions, JWT even if those exact words aren't used.",
   {
     query: z.string().describe("Natural language description of what you're looking for. Example: 'how are transactions signed'"),
     top_k: z.number().optional().describe("Number of matches to return. Default: 5."),
@@ -163,6 +165,46 @@ server.tool(
       }],
     };
   },
+);
+
+server.tool(
+  "semantic_navigate",
+  "Browse the codebase by MEANING, not directory structure. Uses spectral clustering on Ollama embeddings to group " +
+  "semantically related files into labeled clusters. Inspired by Gabriella Gonzalez's semantic navigator. " +
+  "Requires Ollama running with an embedding model and a chat model for labeling.",
+  {
+    max_depth: z.number().optional().describe("Maximum nesting depth of clusters. Default: 3."),
+    max_clusters: z.number().optional().describe("Maximum sub-clusters per level. Default: 20."),
+  },
+  async ({ max_depth, max_clusters }) => ({
+    content: [{
+      type: "text" as const,
+      text: await semanticNavigate({ rootDir: ROOT_DIR, maxDepth: max_depth, maxClusters: max_clusters }),
+    }],
+  }),
+);
+
+server.tool(
+  "get_feature_hub",
+  "Obsidian-style feature hub navigator. Hub files are .md files containing [[path/to/file]] wikilinks that act as a Map of Content. " +
+  "Modes: (1) No args = list all hubs, (2) hub_path or feature_name = show hub with bundled skeletons of all linked files, " +
+  "(3) show_orphans = find files not linked to any hub. Prevents orphaned code and enables graph-based codebase navigation.",
+  {
+    hub_path: z.string().optional().describe("Path to a specific hub .md file (relative to root)."),
+    feature_name: z.string().optional().describe("Feature name to search for. Finds matching hub file automatically."),
+    show_orphans: z.boolean().optional().describe("If true, lists all source files not linked to any feature hub."),
+  },
+  async ({ hub_path, feature_name, show_orphans }) => ({
+    content: [{
+      type: "text" as const,
+      text: await getFeatureHub({
+        rootDir: ROOT_DIR,
+        hubPath: hub_path,
+        featureName: feature_name,
+        showOrphans: show_orphans,
+      }),
+    }],
+  }),
 );
 
 async function main() {

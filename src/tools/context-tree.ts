@@ -71,28 +71,27 @@ async function buildTree(entries: FileEntry[], _rootDir: string, includeSymbols:
   return root;
 }
 
-function renderTree(node: TreeNode, indent: number = 0, isLast: boolean = true): string {
-  const prefix = indent === 0 ? "" : (isLast ? "└── " : "├── ");
-  const linePrefix = indent === 0 ? "" : "  ".repeat(indent - 1) + prefix;
+function renderTree(node: TreeNode, indent: number = 0): string {
   let result = "";
+  const pad = "  ".repeat(indent);
 
   if (indent === 0) {
-    result = `▼ ${node.name}/\n`;
+    result = `${node.name}/\n`;
   } else if (node.isDirectory) {
-    result = `${linePrefix}▶ ${node.name}/\n`;
+    result = `${pad}${node.name}/\n`;
   } else {
-    result = `${linePrefix}${node.name}`;
-    if (node.header) result += ` (${node.header})`;
+    result = `${pad}${node.name}`;
+    if (node.header) result += ` | ${node.header}`;
     result += "\n";
     if (node.symbols) {
       for (const line of node.symbols.split("\n")) {
-        result += `${"  ".repeat(indent)}    ${line}\n`;
+        result += `${pad}  ${line}\n`;
       }
     }
   }
 
-  for (let i = 0; i < node.children.length; i++) {
-    result += renderTree(node.children[i], indent + 1, i === node.children.length - 1);
+  for (const child of node.children) {
+    result += renderTree(child, indent + 1);
   }
   return result;
 }

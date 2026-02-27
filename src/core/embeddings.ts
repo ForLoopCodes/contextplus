@@ -1,6 +1,7 @@
 // Ollama-powered vector embedding engine with cosine similarity search
 // Indexes file headers and symbols, caches embeddings to disk for speed
 
+import { Ollama } from "ollama";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
@@ -22,10 +23,17 @@ interface EmbeddingCache {
   [path: string]: { hash: string; vector: number[] };
 }
 
-const OLLAMA_URL = process.env.OLLAMA_URL ?? "http://localhost:11434";
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const CACHE_DIR = ".mcp_data";
 const CACHE_FILE = "embeddings-cache.json";
+
+const ollama = new Ollama();
+
+export async function fetchEmbedding(input: string | string[]): Promise<number[][]> {
+  const inputs = Array.isArray(input) ? input : [input];
+  const response = await ollama.embed({ model: EMBED_MODEL, input: inputs });
+  return response.embeddings;
+}
 
 function hashContent(text: string): string {
   let h = 0;
@@ -51,18 +59,6 @@ function splitCamelCase(text: string): string[] {
     .toLowerCase()
     .split(/[\s_-]+/)
     .filter((t) => t.length > 1);
-}
-
-async function fetchEmbedding(input: string | string[]): Promise<number[][]> {
-  const res = await fetch(`${OLLAMA_URL}/api/embed`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: EMBED_MODEL, input }),
-  });
-
-  if (!res.ok) throw new Error(`Ollama embed failed: ${res.status} ${await res.text()}`);
-  const data = await res.json() as { embeddings: number[][] };
-  return data.embeddings;
 }
 
 async function loadCache(rootDir: string): Promise<EmbeddingCache> {

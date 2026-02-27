@@ -8,11 +8,16 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node build/index.js"
+    "start": "node build/index.js",
+    "test": "node --test test/main/*.test.mjs",
+    "test:demo": "node --test test/demo/*.demo.mjs",
+    "test:all": "node --test test/main/*.test.mjs test/demo/*.demo.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "ignore": "^7.0.4",
+    "ml-matrix": "^6.12.1",
+    "ollama": "^0.6.3",
     "simple-git": "^3.27.0",
     "tree-sitter-wasms": "^0.1.13",
     "web-tree-sitter": "^0.20.8",

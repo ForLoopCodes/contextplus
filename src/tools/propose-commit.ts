@@ -38,6 +38,13 @@ function validateHeader(lines: string[], ext: string): ValidationError[] {
     });
   }
 
+  if (headerLines.length >= 2 && !headerLines[1].toUpperCase().includes("FEATURE:")) {
+    errors.push({
+      rule: "feature-tag",
+      message: `Line 2 should include a FEATURE: tag (e.g., "${prefix} FEATURE: Feature Name"). Links files to feature hubs.`,
+    });
+  }
+
   return errors;
 }
 

@@ -3,3 +3,4 @@ build/
 .mcp_data/
 *.js.map
 *.d.ts
+.env*
