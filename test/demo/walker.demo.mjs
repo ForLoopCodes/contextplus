@@ -75,7 +75,7 @@ describe("DEMO: groupByDirectory", () => {
 
     const grouped = groupByDirectory(files);
     const output = Object.fromEntries(
-      [...grouped.entries()].map(([k, v]) => [k, v.map(f => f.relativePath)])
+      [...grouped.entries()].map(([k, v]) => [k, v.map((f) => f.relativePath)]),
     );
 
     console.log("\n--- OUTPUT ---");

@@ -1,9 +1,9 @@
 {
-  "name": "better-agent-mcp",
+  "name": "contextual",
   "version": "1.0.0",
   "type": "module",
   "bin": {
-    "better-agent-mcp": "./build/index.js"
+    "contextual": "./build/index.js"
   },
   "scripts": {
     "build": "tsc",

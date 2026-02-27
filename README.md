@@ -1,4 +1,4 @@
-# better-agent-mcp
+# contextual
 
 MCP server for semantic codebase navigation. Gives AI agents structural awareness without reading every file.
 

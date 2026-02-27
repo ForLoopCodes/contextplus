@@ -1,8 +1,8 @@
-# Better Agent MCP - Agent Instructions
+# Contextual MCP - Agent Instructions
 
 ## Purpose
 
-You are equipped with the Better Agent MCP server. It gives you structural awareness of the entire codebase without reading every file. Follow this workflow strictly to conserve context and maximize accuracy.
+You are equipped with the Contextual MCP server. It gives you structural awareness of the entire codebase without reading every file. Follow this workflow strictly to conserve context and maximize accuracy.
 
 ## Architecture
 
