@@ -39,7 +39,7 @@ export default function Home() {
       >
         <h1
           className="font-light"
-          style={{ fontSize: 64, lineHeight: "83px", color: "rgba(0,0,0,0.5)" }}
+          style={{ fontSize: 48, lineHeight: "62px", color: "rgba(0,0,0,0.5)" }}
         >
           Semantic Intelligence for
           <br />
@@ -47,7 +47,7 @@ export default function Home() {
         </h1>
         <p
           className="font-light text-black"
-          style={{ fontSize: 20, lineHeight: "26px", maxWidth: 719 }}
+          style={{ fontSize: 16, lineHeight: "22px", maxWidth: 719 }}
         >
           Contextual is an MCP server designed for developers who demand 99%
           accuracy. By combining Tree-sitter AST parsing, Spectral Clustering,
