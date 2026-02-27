@@ -1,3 +1,5 @@
+import Background from "../components/Background";
+
 async function getStars(): Promise<number> {
   try {
     const res = await fetch(
@@ -16,10 +18,11 @@ export default async function Home() {
 
   return (
     <div className="relative w-full min-h-screen">
+      <Background />
       {/* Navbar */}
       <nav
-        className="flex justify-between items-center"
-        style={{ padding: "40px 100px 30px" }}
+        className="flex justify-between items-center relative"
+        style={{ padding: "40px 100px 30px", zIndex: 1 }}
       >
         <span
           className="font-light text-black"
@@ -57,8 +60,8 @@ export default async function Home() {
 
       {/* Hero */}
       <section
-        className="flex flex-col"
-        style={{ padding: "64px 100px", gap: 34, maxWidth: 830 }}
+        className="flex flex-col relative"
+        style={{ padding: "64px 100px", gap: 34, maxWidth: 830, zIndex: 1 }}
       >
         <h1
           className="font-light"

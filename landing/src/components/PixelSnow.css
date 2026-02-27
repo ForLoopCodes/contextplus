@@ -1,0 +1,16 @@
+.pixel-snow-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  contain: layout style paint;
+}
+
+.pixel-snow-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
