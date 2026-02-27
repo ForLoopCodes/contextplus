@@ -1,0 +1,5 @@
+node_modules/
+build/
+.mcp_data/
+*.js.map
+*.d.ts

@@ -1,0 +1,23 @@
+{
+  "name": "better-agent-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "better-agent-mcp": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "ignore": "^7.0.4",
+    "simple-git": "^3.27.0",
+    "zod": "^3.25.23"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}
