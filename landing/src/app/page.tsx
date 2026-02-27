@@ -2,7 +2,7 @@ async function getStars(): Promise<number> {
   try {
     const res = await fetch(
       "https://api.github.com/repos/ForLoopCodes/contextual",
-      { next: { revalidate: 3600 } }
+      { next: { revalidate: 3600 } },
     );
     const data = await res.json();
     return data.stargazers_count ?? 0;
@@ -19,11 +19,11 @@ export default async function Home() {
       {/* Navbar */}
       <nav
         className="flex justify-between items-center"
-        style={{ padding: "30px 100px" }}
+        style={{ padding: "40px 100px 30px" }}
       >
         <span
           className="font-light text-black"
-          style={{ fontSize: 20, lineHeight: "26px" }}
+          style={{ fontSize: 22, lineHeight: "28px" }}
         >
           Contextual
         </span>
@@ -35,8 +35,8 @@ export default async function Home() {
           style={{ gap: 8 }}
         >
           <svg
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="#1E1E1E"
@@ -48,7 +48,7 @@ export default async function Home() {
           </svg>
           <span
             className="font-light text-black"
-            style={{ fontSize: 14, lineHeight: "20px" }}
+            style={{ fontSize: 18, lineHeight: "24px" }}
           >
             {stars}
           </span>
@@ -58,19 +58,33 @@ export default async function Home() {
       {/* Hero */}
       <section
         className="flex flex-col"
-        style={{ padding: "64px 100px 0", gap: 34, maxWidth: 819 }}
+        style={{ padding: "64px 100px", gap: 34, maxWidth: 830 }}
       >
         <h1
           className="font-light"
-          style={{ fontSize: 48, lineHeight: "62px", color: "rgba(0,0,0,0.5)" }}
+          style={{
+            fontSize: 56,
+            lineHeight: "72px",
+            letterSpacing: "-0.02em",
+            color: "rgba(0,0,0,0.5)",
+            fontFamily: "var(--font-geist-sans)",
+          }}
         >
           Semantic Intelligence for
           <br />
-          <span className="text-black">Large-Scale Engineering</span>
+          <span className="text-black">Large-Scale Engineering.</span>
         </h1>
         <p
-          className="font-light text-black"
-          style={{ fontSize: 16, lineHeight: "22px" }}
+          className="font-light"
+          style={{
+            fontSize: 18,
+            lineHeight: "28px",
+            letterSpacing: "-0.02em",
+            background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
         >
           Contextual is an MCP server designed for developers who demand 99%
           accuracy. By combining Tree-sitter AST parsing, Spectral Clustering,

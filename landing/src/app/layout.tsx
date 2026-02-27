@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import { GeistPixelSquare } from "geist/font/pixel";
 import "./globals.css";
-
-const geist = Geist({
-  subsets: ["latin"],
-  weight: ["300", "400"],
-});
 
 export const metadata: Metadata = {
   title: "Contextual — Semantic Intelligence for Large-Scale Engineering",
@@ -20,7 +17,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={geist.className}>{children}</body>
+      <body
+        className={`${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable} ${GeistPixelSquare.className}`}
+      >
+        {children}
+      </body>
     </html>
   );
 }
