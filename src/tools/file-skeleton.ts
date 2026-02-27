@@ -1,7 +1,7 @@
 // Detailed function signature extractor without reading full file bodies
 // Returns structural skeleton: signatures, params, return types only
 
-import { analyzeFile, formatSymbol, isSupportedFile, type FileAnalysis } from "../core/parser.js";
+import { analyzeFile, isSupportedFile, type FileAnalysis } from "../core/parser.js";
 import { readFile } from "fs/promises";
 import { resolve } from "path";
 

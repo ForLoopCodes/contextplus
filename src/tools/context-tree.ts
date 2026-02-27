@@ -2,8 +2,7 @@
 // Dynamic token-aware pruning: Level 0 (files only) to Level 2 (deep context)
 
 import { walkDirectory, type FileEntry } from "../core/walker.js";
-import { analyzeFile, formatSymbol, isSupportedFile, type FileAnalysis } from "../core/parser.js";
-import { relative } from "path";
+import { analyzeFile, formatSymbol, isSupportedFile } from "../core/parser.js";
 
 export interface ContextTreeOptions {
   rootDir: string;
@@ -28,7 +27,7 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / CHARS_PER_TOKEN);
 }
 
-async function buildTree(entries: FileEntry[], rootDir: string, includeSymbols: boolean): Promise<TreeNode> {
+async function buildTree(entries: FileEntry[], _rootDir: string, includeSymbols: boolean): Promise<TreeNode> {
   const root: TreeNode = { name: ".", relativePath: ".", isDirectory: true, children: [] };
   const dirMap = new Map<string, TreeNode>();
   dirMap.set(".", root);

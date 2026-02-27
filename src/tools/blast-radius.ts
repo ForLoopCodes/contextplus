@@ -4,7 +4,6 @@
 import { walkDirectory } from "../core/walker.js";
 import { isSupportedFile } from "../core/parser.js";
 import { readFile } from "fs/promises";
-import { resolve } from "path";
 
 export interface BlastRadiusOptions {
   rootDir: string;

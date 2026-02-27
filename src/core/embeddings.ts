@@ -81,11 +81,8 @@ async function saveCache(rootDir: string, cache: EmbeddingCache): Promise<void> 
 export class SearchIndex {
   private documents: SearchDocument[] = [];
   private vectors: number[][] = [];
-  private rootDir = "";
-
   async index(docs: SearchDocument[], rootDir: string): Promise<void> {
     this.documents = docs;
-    this.rootDir = rootDir;
     const cache = await loadCache(rootDir);
     const uncached: { idx: number; text: string; hash: string }[] = [];
 

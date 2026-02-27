@@ -1,10 +1,10 @@
 // Code commit gatekeeper enforcing 2-line headers, no inline comments
 // Validates abstraction rules and creates shadow restore points before writing
 
-import { readFile, writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import { resolve, dirname, extname } from "path";
 import { createRestorePoint } from "../git/shadow.js";
-import { analyzeFile, isSupportedFile } from "../core/parser.js";
+import { isSupportedFile } from "../core/parser.js";
 
 export interface ProposeCommitOptions {
   rootDir: string;
@@ -17,17 +17,6 @@ interface ValidationError {
   message: string;
   line?: number;
 }
-
-const COMMENT_PATTERNS: Record<string, RegExp[]> = {
-  line: [
-    /\/\/(?!\s*$)/,
-    /#(?!\s*$|!\/)/,
-    /--(?!\[)/,
-  ],
-  block: [
-    /\/\*[\s\S]*?\*\//,
-  ],
-};
 
 function validateHeader(lines: string[], ext: string): ValidationError[] {
   const errors: ValidationError[] = [];

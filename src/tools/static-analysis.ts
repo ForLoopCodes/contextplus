@@ -91,7 +91,7 @@ export async function runStaticAnalysis(options: StaticAnalysisOptions): Promise
   }
 
   const results: string[] = [];
-  for (const [fileExt, config] of Object.entries(LINTER_MAP)) {
+  for (const [fileExt] of Object.entries(LINTER_MAP)) {
     const linter = await detectAvailableLinter(options.rootDir, fileExt);
     if (!linter) continue;
 
