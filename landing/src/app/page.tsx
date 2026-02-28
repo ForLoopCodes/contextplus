@@ -95,6 +95,500 @@ export default async function Home() {
           searchable, hierarchical feature graph.
         </p>
       </section>
+
+      {/* Diagram */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          width: "fit-content",
+          marginLeft: 100,
+        }}
+      >
+        {/* Dashed line with centered title */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              height: 8,
+              minWidth: 40,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <svg
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+              }}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <pattern
+                  id="sep-left"
+                  width="6"
+                  height="6"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(45)"
+                >
+                  <line
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="6"
+                    stroke="#333333"
+                    strokeWidth="1.5"
+                  />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#sep-left)" />
+            </svg>
+          </div>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: "#000000",
+              fontFamily: "var(--font-geist-pixel-square)",
+              letterSpacing: "-0.02em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Contextual MCP
+          </span>
+          <div
+            style={{
+              flex: 1,
+              height: 8,
+              minWidth: 40,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <svg
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+              }}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <pattern
+                  id="sep-right"
+                  width="6"
+                  height="6"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(45)"
+                >
+                  <line
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="6"
+                    stroke="#888888"
+                    strokeWidth="1.5"
+                  />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#sep-right)" />
+            </svg>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          {/* Discovery group — 2x2 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#000000",
+                fontFamily: "var(--font-geist-pixel-square)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Discovery
+            </span>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 10,
+                border: "1.5px solid rgba(0,0,0,0.15)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                background: "rgba(239,239,239,0.45)",
+                borderRadius: 20,
+                padding: 20,
+              }}
+            >
+              {[
+                { color: "#000000", label: "Context Tree" },
+                { color: "#111111", label: "File Skeleton" },
+                { color: "#222222", label: "Semantic Search" },
+                { color: "#333333", label: "Semantic Navigate" },
+              ].map(({ color, label }) => (
+                <div
+                  key={label}
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color,
+                      fontFamily: "var(--font-geist-pixel-square)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <div
+                    style={{
+                      boxSizing: "border-box",
+                      width: 126,
+                      height: 126,
+                      border: `1.5px solid ${color}`,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <svg
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <defs>
+                        <pattern
+                          id={`diag-${label.replace(/\s/g, "")}`}
+                          width="6"
+                          height="6"
+                          patternUnits="userSpaceOnUse"
+                          patternTransform="rotate(45)"
+                        >
+                          <line
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="6"
+                            stroke={color}
+                            strokeWidth="1.5"
+                          />
+                        </pattern>
+                      </defs>
+                      <rect
+                        width="100%"
+                        height="100%"
+                        fill={`url(#diag-${label.replace(/\s/g, "")})`}
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Analysis group */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#444444",
+                fontFamily: "var(--font-geist-pixel-square)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Analysis
+            </span>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                border: "1.5px solid rgba(0,0,0,0.15)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                background: "rgba(239,239,239,0.45)",
+                borderRadius: 20,
+                padding: 20,
+              }}
+            >
+              {[
+                { color: "#444444", label: "Blast Radius" },
+                { color: "#555555", label: "Static Analysis" },
+              ].map(({ color, label }) => (
+                <div
+                  key={label}
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color,
+                      fontFamily: "var(--font-geist-pixel-square)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <div
+                    style={{
+                      boxSizing: "border-box",
+                      width: 126,
+                      height: 126,
+                      border: `1.5px solid ${color}`,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <svg
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <defs>
+                        <pattern
+                          id={`diag-${label.replace(/\s/g, "")}`}
+                          width="6"
+                          height="6"
+                          patternUnits="userSpaceOnUse"
+                          patternTransform="rotate(45)"
+                        >
+                          <line
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="6"
+                            stroke={color}
+                            strokeWidth="1.5"
+                          />
+                        </pattern>
+                      </defs>
+                      <rect
+                        width="100%"
+                        height="100%"
+                        fill={`url(#diag-${label.replace(/\s/g, "")})`}
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Code Ops group */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#666666",
+                fontFamily: "var(--font-geist-pixel-square)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Code Ops
+            </span>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                border: "1.5px solid rgba(0,0,0,0.15)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                background: "rgba(239,239,239,0.45)",
+                borderRadius: 20,
+                padding: 20,
+              }}
+            >
+              {[
+                { color: "#666666", label: "Propose Commit" },
+                { color: "#777777", label: "Feature Hub" },
+              ].map(({ color, label }) => (
+                <div
+                  key={label}
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color,
+                      fontFamily: "var(--font-geist-pixel-square)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <div
+                    style={{
+                      boxSizing: "border-box",
+                      width: 126,
+                      height: 126,
+                      border: `1.5px solid ${color}`,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <svg
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <defs>
+                        <pattern
+                          id={`diag-${label.replace(/\s/g, "")}`}
+                          width="6"
+                          height="6"
+                          patternUnits="userSpaceOnUse"
+                          patternTransform="rotate(45)"
+                        >
+                          <line
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="6"
+                            stroke={color}
+                            strokeWidth="1.5"
+                          />
+                        </pattern>
+                      </defs>
+                      <rect
+                        width="100%"
+                        height="100%"
+                        fill={`url(#diag-${label.replace(/\s/g, "")})`}
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Version Control group */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#888888",
+                fontFamily: "var(--font-geist-pixel-square)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Version Control
+            </span>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                border: "1.5px solid rgba(0,0,0,0.15)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                background: "rgba(239,239,239,0.45)",
+                borderRadius: 20,
+                padding: 20,
+              }}
+            >
+              {[
+                { color: "#888888", label: "Restore Points" },
+                { color: "#999999", label: "Undo Change" },
+              ].map(({ color, label }) => (
+                <div
+                  key={label}
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color,
+                      fontFamily: "var(--font-geist-pixel-square)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <div
+                    style={{
+                      boxSizing: "border-box",
+                      width: 126,
+                      height: 126,
+                      border: `1.5px solid ${color}`,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <svg
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <defs>
+                        <pattern
+                          id={`diag-${label.replace(/\s/g, "")}`}
+                          width="6"
+                          height="6"
+                          patternUnits="userSpaceOnUse"
+                          patternTransform="rotate(45)"
+                        >
+                          <line
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="6"
+                            stroke={color}
+                            strokeWidth="1.5"
+                          />
+                        </pattern>
+                      </defs>
+                      <rect
+                        width="100%"
+                        height="100%"
+                        fill={`url(#diag-${label.replace(/\s/g, "")})`}
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
