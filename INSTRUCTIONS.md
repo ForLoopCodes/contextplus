@@ -45,6 +45,8 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 | `OLLAMA_API_KEY`     | (empty)            | Cloud auth (auto-detected by SDK) |
 | `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Chat model for cluster labeling   |
 
+Runtime cache: `.mcp_data/` is created at MCP startup and stores reusable embedding vectors for files, identifiers, and call sites.
+
 ## Fast Execute Mode (Mandatory)
 
 Default to execution-first behavior. Use minimal tokens, minimal narration, and maximum tool leverage.
@@ -117,19 +119,19 @@ Strict order within every file:
 
 ## Tool Reference
 
-| Tool                   | When to Use                                            |
-| ---------------------- | ------------------------------------------------------ |
-| `get_context_tree`     | Start of every task. Map files + symbols with line ranges. |
-| `semantic_navigate`    | Browse codebase by meaning, not directory structure.   |
-| `get_file_skeleton`    | MUST run before full reads. Get signatures + line ranges first. |
-| `semantic_code_search` | Find relevant files by concept with symbol definition lines. |
+| Tool                         | When to Use                                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------------- |
+| `get_context_tree`           | Start of every task. Map files + symbols with line ranges.                         |
+| `semantic_navigate`          | Browse codebase by meaning, not directory structure.                               |
+| `get_file_skeleton`          | MUST run before full reads. Get signatures + line ranges first.                    |
+| `semantic_code_search`       | Find relevant files by concept with symbol definition lines.                       |
 | `semantic_identifier_search` | Find closest functions/classes/variables and ranked call chains with line numbers. |
-| `get_blast_radius`     | Before deleting or modifying any symbol.               |
-| `run_static_analysis`  | After writing code. Catch dead code deterministically. |
-| `propose_commit`       | The ONLY way to save files. Validates before writing.  |
-| `list_restore_points`  | See undo history.                                      |
-| `undo_change`          | Revert a bad AI change without touching git.           |
-| `get_feature_hub`      | Browse feature graph hubs. Find orphaned files.        |
+| `get_blast_radius`           | Before deleting or modifying any symbol.                                           |
+| `run_static_analysis`        | After writing code. Catch dead code deterministically.                             |
+| `propose_commit`             | The ONLY way to save files. Validates before writing.                              |
+| `list_restore_points`        | See undo history.                                                                  |
+| `undo_change`                | Revert a bad AI change without touching git.                                       |
+| `get_feature_hub`            | Browse feature graph hubs. Find orphaned files.                                    |
 
 ## Anti-Patterns to Avoid
 

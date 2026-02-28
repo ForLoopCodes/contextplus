@@ -4,23 +4,19 @@ Semantic Intelligence for Large-Scale Engineering.
 
 Context+ is an MCP server designed for developers who demand 99% accuracy. By combining Tree-sitter AST parsing, Spectral Clustering, and Obsidian-style linking, Context+ turns a massive codebase into a searchable, hierarchical feature graph.
 
-
-
 https://github.com/user-attachments/assets/a97a451f-c9b4-468d-b036-15b65fc13e79
-
-
 
 ## Tools
 
 ### Discovery
 
-| Tool                   | Description                                                                                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get_context_tree`     | Structural AST tree of a project with file headers and symbol ranges (line numbers for functions/classes/methods). Dynamic pruning shrinks output automatically. |
-| `get_file_skeleton`    | Function signatures, class methods, and type definitions with line ranges, without reading full bodies. Shows the API surface.                    |
-| `semantic_code_search` | Search by meaning, not exact text. Uses embeddings over file headers/symbols and returns matched symbol definition lines.                          |
-| `semantic_identifier_search` | Identifier-level semantic retrieval for functions/classes/variables with ranked call sites and line numbers.                               |
-| `semantic_navigate`    | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters.                                    |
+| Tool                         | Description                                                                                                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_context_tree`           | Structural AST tree of a project with file headers and symbol ranges (line numbers for functions/classes/methods). Dynamic pruning shrinks output automatically. |
+| `get_file_skeleton`          | Function signatures, class methods, and type definitions with line ranges, without reading full bodies. Shows the API surface.                                   |
+| `semantic_code_search`       | Search by meaning, not exact text. Uses embeddings over file headers/symbols and returns matched symbol definition lines.                                        |
+| `semantic_identifier_search` | Identifier-level semantic retrieval for functions/classes/variables with ranked call sites and line numbers.                                                     |
+| `semantic_navigate`          | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters.                                                   |
 
 ### Analysis
 
