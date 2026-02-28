@@ -37,6 +37,23 @@ body {
 
 /* ── Responsive ────────────────────────────── */
 
+/* Extra-large desktop (≥1600px) — wider hero padding */
+@media (min-width: 1600px) {
+  .hero-diagram-row {
+    padding-left: 200px !important;
+    padding-right: 200px !important;
+    min-height: 80vh !important;
+  }
+  .iso-diagram {
+    padding-right: 200px !important;
+  }
+}
+@media (max-width: 1000px) {
+  .hero-diagram-row { 
+    min-height: 60vh !important;
+  }
+}
+
 /* Large desktop (≥1440px) — scale diagram up */
 @media (min-width: 1440px) {
   .tool-square {
@@ -69,6 +86,9 @@ body {
 
 /* Tablet (≤1024px) — stack groups vertically */
 @media (max-width: 1024px) {
+  .hero-diagram-row {
+    padding: 48px 60px 20px !important;
+  }
   .nav-bar {
     padding: 40px 60px 30px !important;
   }
@@ -118,6 +138,10 @@ body {
 
 /* Mobile (≤768px) */
 @media (max-width: 768px) {
+  .hero-diagram-row {
+    padding: 32px 20px 16px !important;
+    flex-direction: column !important;
+  }
   .nav-bar {
     padding: 20px 20px 16px !important;
   }

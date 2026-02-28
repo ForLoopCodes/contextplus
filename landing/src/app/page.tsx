@@ -1,6 +1,7 @@
 import Background from "../components/Background";
 import IdeSetup from "../components/IdeSetup";
 import InstructionsSection from "../components/InstructionsSection";
+import IsometricDiagram from "../components/IsometricDiagram";
 
 async function getStars(): Promise<number> {
   try {
@@ -68,43 +69,58 @@ export default async function Home() {
         </a>
       </nav>
 
-      {/* Hero */}
-      <section
-        className="hero-section flex flex-col relative"
-        style={{ padding: "64px 100px", gap: 34, maxWidth: 830, zIndex: 1 }}
+      {/* Hero + Isometric Diagram row */}
+      <div
+        className="hero-diagram-row"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "0 100px",
+          gap: 60,
+          zIndex: 1,
+          position: "relative",
+        }}
       >
-        <h1
-          className="hero-title font-light"
-          style={{
-            fontSize: 56,
-            lineHeight: "72px",
-            letterSpacing: "-0.02em",
-            color: "rgba(0,0,0,0.5)",
-            fontFamily: "var(--font-geist-sans)",
-          }}
+        {/* Hero */}
+        <section
+          className="hero-section flex flex-col relative"
+          style={{ gap: 24, flex: "1 1 auto", minWidth: 0, maxWidth: 630 }}
         >
-          Semantic Intelligence for
-          <br />
-          <span className="text-black">Large-Scale Engineering.</span>
-        </h1>
-        <p
-          className="hero-text font-light"
-          style={{
-            fontSize: 18,
-            lineHeight: "28px",
-            letterSpacing: "-0.02em",
-            background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          Contextual is an MCP server designed for developers who demand 99%
-          accuracy. By combining Tree-sitter AST parsing, Spectral Clustering,
-          and Obsidian-style linking, Contextual turns a massive codebase into a
-          searchable, hierarchical feature graph.
-        </p>
-      </section>
+          <h1
+            className="hero-title font-light"
+            style={{
+              fontSize: 56,
+              lineHeight: "72px",
+              letterSpacing: "-0.02em",
+              color: "rgba(0,0,0,0.5)",
+              fontFamily: "var(--font-geist-sans)",
+            }}
+          >
+            Semantic Intelligence for
+            <br />
+            <span className="text-black">Large-Scale Engineering.</span>
+          </h1>
+          <p
+            className="hero-text font-light"
+            style={{
+              fontSize: 18,
+              lineHeight: "28px",
+              letterSpacing: "-0.02em",
+              background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Contextual is an MCP server designed for developers who demand 99%
+            accuracy. By combining Tree-sitter AST parsing, Spectral Clustering,
+            and Obsidian-style linking, Contextual turns a massive codebase into
+            a searchable, hierarchical feature graph.
+          </p>
+        </section>
+      </div>
+
+      <IsometricDiagram />
 
       {/* Diagram */}
       <div
