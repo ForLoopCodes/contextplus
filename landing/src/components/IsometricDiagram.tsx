@@ -93,7 +93,7 @@ export default function IsometricDiagram() {
     stackDx: STACK_DX,
     stackDy: STACK_DY,
   } = getCardConfig(windowWidth);
-  const isMobile = windowWidth < 850;
+  const isMobile = windowWidth < 500;
 
   const cycleTopCard = useCallback(() => {
     if (animating) return;
@@ -140,6 +140,7 @@ export default function IsometricDiagram() {
   const isLargeDesktop = windowWidth >= 1400 && windowWidth < 1800;
   const isSmallDesktop = windowWidth >= 850 && windowWidth < 1400;
   const isVerySmallDesktop = windowWidth >= 850 && windowWidth < 1250;
+  const isLargeMobile = windowWidth >= 500 && windowWidth < 850;
 
   return (
     <div
@@ -150,13 +151,15 @@ export default function IsometricDiagram() {
         zIndex: 1,
         marginTop: isMobile
           ? -200
-          : isVerySmallDesktop
-            ? -120
-            : isSmallDesktop
+          : isLargeMobile
+            ? -100
+            : isVerySmallDesktop
               ? -120
-              : isLargeDesktop
-                ? -400
-                : -600,
+              : isSmallDesktop
+                ? -120
+                : isLargeDesktop
+                  ? -400
+                  : -600,
         display: "flex",
         alignItems: isMobile ? "center" : "flex-end",
         aspectRatio: isMobile ? "1 / 1" : undefined,
