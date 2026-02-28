@@ -14,15 +14,37 @@ const runners = [
   { id: "bunx", label: "bunx" },
 ];
 
-function buildConfig(runner: string): string {
-  const commandArgs =
-    runner === "npx" ? ["-y", "contextplus"] : ["contextplus"];
+function buildConfig(runner: string, ideId: string): string {
+  const isNpx = runner === "npx";
+
+  if (ideId === "vscode") {
+    return JSON.stringify(
+      {
+        servers: {
+          contextplus: {
+            type: "stdio",
+            command: isNpx ? "npx" : "bunx",
+            args: isNpx ? ["-y", "contextplus"] : ["contextplus"],
+            env: {
+              OLLAMA_EMBED_MODEL: "nomic-embed-text",
+              OLLAMA_CHAT_MODEL: "gemma2:27b",
+              OLLAMA_API_KEY: "YOUR_OLLAMA_API_KEY",
+            },
+          },
+        },
+        inputs: [],
+      },
+      null,
+      2,
+    );
+  }
+
   return JSON.stringify(
     {
       mcpServers: {
         contextplus: {
-          command: runner,
-          args: commandArgs,
+          command: isNpx ? "npx" : "bunx",
+          args: isNpx ? ["-y", "contextplus"] : ["contextplus"],
           env: {
             OLLAMA_EMBED_MODEL: "nomic-embed-text",
             OLLAMA_CHAT_MODEL: "gemma2:27b",
@@ -110,7 +132,7 @@ export default function IdeSetup() {
   const [copiedInit, setCopiedInit] = useState(false);
 
   const ide = ides.find((i) => i.id === activeIde)!;
-  const config = buildConfig(activeRunner);
+  const config = buildConfig(activeRunner, activeIde);
   const initCommand = buildInitCommand(activeRunner, activeIde);
 
   const handleCopy = () => {
@@ -380,7 +402,7 @@ export default function IdeSetup() {
             }}
           >
             Before using Context+, make sure Ollama is running and install the
-            models referenced in your config.{" "}
+            required models (for example, nomic-embed-text and gemma2:27b).{" "}
             <span style={{ textDecoration: "underline" }}>
               Get your Ollama Cloud API key here
             </span>
