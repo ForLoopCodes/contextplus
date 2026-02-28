@@ -18,9 +18,9 @@ function buildConfig(runner: string): string {
   return JSON.stringify(
     {
       mcpServers: {
-        contextual: {
+        contextplus: {
           command: runner,
-          args: ["-y", "contextual"],
+          args: ["-y", "contextplus"],
           env: {
             OLLAMA_EMBED_MODEL: "nomic-embed-text",
             OLLAMA_CHAT_MODEL: "gemma2:27b",
@@ -154,9 +154,9 @@ export default function IdeSetup() {
               marginBottom: 40,
             }}
           >
-            &ldquo;Contextual is the best thing that has happened to my
+            &ldquo;Context+ is the best thing that has happened to my
             agent.&rdquo; Give it the semantic understanding it deserves. Add
-            Contextual to your IDE by pasting the following JSON into your MCP
+            Context+ to your IDE by pasting the following JSON into your MCP
             configuration file.
           </p>
 

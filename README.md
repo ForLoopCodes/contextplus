@@ -1,4 +1,4 @@
-# contextual
+# contextplus
 
 MCP server for semantic codebase navigation. Gives AI agents structural awareness without reading every file.
 
@@ -24,7 +24,7 @@ npm run build
 
 ## Usage
 
-By default, contextual analyzes the directory it's launched from (`process.cwd()`).
+By default, contextplus analyzes the directory it's launched from (`process.cwd()`).
 To point it at a different project, pass the path as the first argument:
 
 ```bash
@@ -36,9 +36,9 @@ node build/index.js /path/to/my-project
 
 # In MCP config (Claude Desktop / VS Code)
 {
-  "contextual": {
+  "contextplus": {
     "command": "node",
-    "args": ["/path/to/contextual/build/index.js", "/path/to/target-project"]
+    "args": ["/path/to/contextplus/build/index.js", "/path/to/target-project"]
   }
 }
 ```

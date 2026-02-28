@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-const INSTRUCTIONS = `# Contextual MCP - Agent Instructions
+const INSTRUCTIONS = `# Context+ MCP - Agent Instructions
 
 ## Purpose
 
-You are equipped with the Contextual MCP server. It gives you structural awareness of the entire codebase without reading every file. Follow this workflow strictly to conserve context and maximize accuracy.
+You are equipped with the Context+ MCP server. It gives you structural awareness of the entire codebase without reading every file. Follow this workflow strictly to conserve context and maximize accuracy.
 
 ## Architecture
 
@@ -236,7 +236,7 @@ export default function InstructionsSection() {
           >
             Copy the instruction file into your project root to teach your agent
             the 3-step workflow, strict formatting rules, and anti-patterns that
-            make Contextual effective. It enforces file headers and clean
+            make Context+ effective. It enforces file headers and clean
             abstraction.
           </p>
 

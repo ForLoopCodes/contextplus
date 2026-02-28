@@ -6,7 +6,7 @@ import IsometricDiagram from "../components/IsometricDiagram";
 async function getStars(): Promise<number> {
   try {
     const res = await fetch(
-      "https://api.github.com/repos/ForLoopCodes/contextual",
+      "https://api.github.com/repos/ForLoopCodes/contextplus",
       { next: { revalidate: 3600 } },
     );
     const data = await res.json();
@@ -39,10 +39,10 @@ export default async function Home() {
           className="font-light text-black"
           style={{ fontSize: 22, lineHeight: "28px" }}
         >
-          Contextual
+          Context+
         </span>
         <a
-          href="https://github.com/ForLoopCodes/contextual"
+          href="https://github.com/ForLoopCodes/contextplus"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center"
@@ -112,10 +112,10 @@ export default async function Home() {
               backgroundClip: "text",
             }}
           >
-            Contextual is an MCP server designed for developers who demand 99%
+            Context+ is an MCP server designed for developers who demand 99%
             accuracy. By combining Tree-sitter AST parsing, Spectral Clustering,
-            and Obsidian-style linking, Contextual turns a massive codebase into
-            a searchable, hierarchical feature graph.
+            and Obsidian-style linking, Context+ turns a massive codebase into a
+            searchable, hierarchical feature graph.
           </p>
         </section>
       </div>
@@ -194,7 +194,7 @@ export default async function Home() {
               whiteSpace: "nowrap",
             }}
           >
-            Contextual MCP
+            Context+ MCP
           </span>
           <div
             style={{
@@ -667,7 +667,7 @@ export default async function Home() {
             marginBottom: 40,
           }}
         >
-          Contextual guarantees minimal context bloat. It gives your agent deep
+          Context+ guarantees minimal context bloat. It gives your agent deep
           semantic understanding of your codebase, from AST parsing and symbol
           navigation to blast radius analysis and commit validation. Nothing
           misses the context.
@@ -942,11 +942,11 @@ export default async function Home() {
           className="font-light text-black"
           style={{ fontSize: 22, lineHeight: "28px" }}
         >
-          Contextual
+          Context+
         </span>
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
           <a
-            href="https://www.npmjs.com/package/contextual"
+            href="https://www.npmjs.com/package/contextplus"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center"
@@ -956,7 +956,7 @@ export default async function Home() {
             </svg>
           </a>
           <a
-            href="https://github.com/ForLoopCodes/contextual"
+            href="https://github.com/ForLoopCodes/contextplus"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center"

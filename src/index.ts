@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Contextual MCP - Semantic codebase navigator for AI agents
+// Context+ MCP - Semantic codebase navigator for AI agents
 // Structural AST tree, blast radius, semantic search, commit gatekeeper
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -19,7 +19,7 @@ import { getFeatureHub } from "./tools/feature-hub.js";
 const ROOT_DIR = process.argv[2] ? resolve(process.argv[2]) : process.cwd();
 
 const server = new McpServer({
-  name: "contextual",
+  name: "contextplus",
   version: "1.0.0",
 }, {
   capabilities: { logging: {} },
@@ -212,7 +212,7 @@ server.tool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`Contextual MCP server running on stdio | root: ${ROOT_DIR}`);
+  console.error(`Context+ MCP server running on stdio | root: ${ROOT_DIR}`);
 }
 
 main().catch((error) => {

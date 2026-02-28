@@ -1,9 +1,9 @@
 {
-  "name": "contextual",
+  "name": "contextplus",
   "version": "1.0.0",
   "type": "module",
   "bin": {
-    "contextual": "./build/index.js"
+    "contextplus": "./build/index.js"
   },
   "scripts": {
     "build": "tsc",
