@@ -5,7 +5,7 @@ import { GeistPixelSquare, GeistPixelLine } from "geist/font/pixel";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Context+ Semantic Intelligence for Large-Scale Engineering",
+  title: "Context+ // Semantic Intelligence for Large-Scale Engineering",
   description:
     "MCP server designed for developers who demand 99% accuracy. Tree-sitter AST parsing, Spectral Clustering, and Obsidian-style linking.",
   icons: {
