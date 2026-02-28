@@ -4,6 +4,12 @@ Semantic Intelligence for Large-Scale Engineering.
 
 Context+ is an MCP server designed for developers who demand 99% accuracy. By combining Tree-sitter AST parsing, Spectral Clustering, and Obsidian-style linking, Context+ turns a massive codebase into a searchable, hierarchical feature graph.
 
+
+
+https://github.com/user-attachments/assets/a97a451f-c9b4-468d-b036-15b65fc13e79
+
+
+
 ## Tools
 
 ### Discovery
