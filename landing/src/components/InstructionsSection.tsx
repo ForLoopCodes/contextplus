@@ -176,7 +176,6 @@ export default function InstructionsSection() {
           width: "100%",
         }}
       >
-        {/* Diagonal line decoration — left side */}
         <div
           className="instr-dashed-square"
           style={{

@@ -242,7 +242,6 @@ export default function IsometricDiagram() {
                   zIndex: isHovered ? 10 : functions.length - visualIdx,
                 }}
               >
-                {/* Hatched fill */}
                 <svg
                   style={{
                     position: "absolute",
@@ -279,7 +278,6 @@ export default function IsometricDiagram() {
                     fill={`url(#iso-diag-${g.id})`}
                   />
                 </svg>
-                {/* Function name label — inside card, bottom-left with rounded bg */}
                 <span
                   style={{
                     position: "absolute",

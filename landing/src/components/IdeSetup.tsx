@@ -137,7 +137,6 @@ export default function IdeSetup() {
           width: "100%",
         }}
       >
-        {/* Main content */}
         <div style={{ minWidth: 0, maxWidth: 1200, flex: "0 1 1200px" }}>
           <p
             style={{
@@ -160,7 +159,6 @@ export default function IdeSetup() {
             configuration file.
           </p>
 
-          {/* Tab bar */}
           <div
             className="ide-tab-bar"
             style={{
@@ -327,7 +325,6 @@ export default function IdeSetup() {
           </a>
         </div>
 
-        {/* Diagonal line decoration — right side */}
         <div
           className="ide-dashed-square"
           style={{

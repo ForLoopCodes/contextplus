@@ -34,7 +34,6 @@ export default function Background() {
           smooth={true}
         />
       </div>
-      {/* Radial gradient overlay: transparent at bottom-right, opaque elsewhere */}
       <div
         style={{
           position: "fixed",

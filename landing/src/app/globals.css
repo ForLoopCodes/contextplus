@@ -60,7 +60,7 @@ label,
   .hero-diagram-row {
     padding-left: 200px !important;
     padding-right: 200px !important;
-    min-height: 80vh !important;
+    min-height: 70vh !important;
   }
   .iso-diagram {
     padding-right: 200px !important;
@@ -71,7 +71,16 @@ label,
     min-height: 60vh !important;
   }
 }
-
+@media (min-width: 1000px) and (max-width: 1400px) {
+  .hero-diagram-row {
+    min-height: 50vh !important;
+  }
+}
+@media (min-width: 1400px) and (max-width: 1600px) {
+  .hero-diagram-row {
+    min-height: 60vh !important;
+  }
+}
 /* Large desktop (≥1440px) — scale diagram up */
 @media (min-width: 1440px) {
   .tool-square {
