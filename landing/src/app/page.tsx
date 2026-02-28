@@ -3,6 +3,8 @@ import IdeSetup from "../components/IdeSetup";
 import InstructionsSection from "../components/InstructionsSection";
 import IsometricDiagram from "../components/IsometricDiagram";
 
+export const dynamic = "force-dynamic";
+
 const toolGroups = [
   {
     name: "Discovery",
@@ -130,8 +132,11 @@ async function getStars(): Promise<number> {
   try {
     const res = await fetch(
       "https://api.github.com/repos/ForLoopCodes/contextplus",
-      { next: { revalidate: 3600 } },
+      { cache: "no-store" },
     );
+    if (!res.ok) {
+      return 0;
+    }
     const data = await res.json();
     return data.stargazers_count ?? 0;
   } catch {
