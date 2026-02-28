@@ -1,55 +1,101 @@
-# contextplus
+# Context+
 
-MCP server for semantic codebase navigation. Gives AI agents structural awareness without reading every file.
+Semantic Intelligence for Large-Scale Engineering.
+
+Context+ is an MCP server designed for developers who demand 99% accuracy. By combining Tree-sitter AST parsing, Spectral Clustering, and Obsidian-style linking, Context+ turns a massive codebase into a searchable, hierarchical feature graph.
 
 ## Tools
 
-- `get_context_tree` — Map project structure with file headers and symbols
-- `get_file_skeleton` — See function signatures without bodies
-- `semantic_code_search` — Find code by concept using Ollama embeddings
-- `semantic_navigate` — Browse codebase by meaning using spectral clustering
-- `get_blast_radius` — Trace symbol usage across the codebase
-- `run_static_analysis` — Run native linters (tsc, eslint, py_compile, cargo, go vet)
-- `propose_commit` — Validate and save files with formatting rules
-- `list_restore_points` — View undo history
-- `undo_change` — Revert changes without touching git
-- `get_feature_hub` — Obsidian-style feature graph with wikilink hubs
+### Discovery
+
+| Tool | Description |
+| --- | --- |
+| `get_context_tree` | Structural AST tree of a project with file headers, function names, classes, and enums. Dynamic token-aware pruning shrinks output automatically. |
+| `get_file_skeleton` | Function signatures, class methods, and type definitions without reading the full body. Shows the API surface. |
+| `semantic_code_search` | Search the codebase by meaning, not exact text. Uses Ollama embeddings over file headers and symbol names. |
+| `semantic_navigate` | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters. |
+
+### Analysis
+
+| Tool | Description |
+| --- | --- |
+| `get_blast_radius` | Trace every file and line where a symbol is imported or used. Prevents orphaned references. |
+| `run_static_analysis` | Run native linters and compilers to find unused variables, dead code, and type errors. Supports TypeScript, Python, Rust, Go. |
+
+### Code Ops
+
+| Tool | Description |
+| --- | --- |
+| `propose_commit` | The only way to write code. Validates against strict rules before saving. Creates a shadow restore point before writing. |
+| `get_feature_hub` | Obsidian-style feature hub navigator. Hubs are `.md` files with `[[wikilinks]]` that map features to code files. |
+
+### Version Control
+
+| Tool | Description |
+| --- | --- |
+| `list_restore_points` | List all shadow restore points created by `propose_commit`. Each captures file state before AI changes. |
+| `undo_change` | Restore files to their state before a specific AI change. Uses shadow restore points. Does not affect git. |
 
 ## Setup
+
+### Quick Start (npx / bunx)
+
+No installation needed. Add to your IDE's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "contextplus": {
+      "command": "npx",
+      "args": ["-y", "contextplus"],
+      "env": {
+        "OLLAMA_EMBED_MODEL": "nomic-embed-text",
+        "OLLAMA_CHAT_MODEL": "gemma2:27b",
+        "OLLAMA_API_KEY": "YOUR_OLLAMA_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Config file locations:
+
+| IDE | Config File |
+| --- | --- |
+| Claude Code | `.mcp.json` |
+| Cursor | `.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` |
+| Windsurf | `.windsurf/mcp.json` |
+
+### From Source
 
 ```bash
 npm install
 npm run build
 ```
 
-## Usage
-
-By default, contextplus analyzes the directory it's launched from (`process.cwd()`).
-To point it at a different project, pass the path as the first argument:
-
 ```bash
-# Analyze current directory
-node build/index.js
-
-# Analyze a specific project
-node build/index.js /path/to/my-project
-
-# In MCP config (Claude Desktop / VS Code)
-{
-  "contextplus": {
-    "command": "node",
-    "args": ["/path/to/contextplus/build/index.js", "/path/to/target-project"]
-  }
-}
+node build/index.js                      # analyze current directory
+node build/index.js /path/to/my-project  # analyze a specific project
 ```
+
+## Architecture
+
+Three layers built with TypeScript over stdio using the Model Context Protocol SDK:
+
+**Core** (`src/core/`) — Multi-language AST parsing (tree-sitter, 43 extensions), gitignore-aware traversal, Ollama vector embeddings with disk cache, wikilink hub graph.
+
+**Tools** (`src/tools/`) — 10 MCP tools exposing structural, semantic, and operational capabilities.
+
+**Git** (`src/git/`) — Shadow restore point system for undo without touching git history.
 
 ## Config
 
-| Env Var              | Default            | Purpose                           |
-| -------------------- | ------------------ | --------------------------------- |
-| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model                   |
-| `OLLAMA_API_KEY`     | —                  | Cloud auth (auto-detected by SDK) |
-| `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Cluster labeling                  |
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model |
+| `OLLAMA_API_KEY` | — | Cloud auth (auto-detected by SDK) |
+| `OLLAMA_CHAT_MODEL` | `llama3.2` | Chat model for cluster labeling |
 
 ## Test
 
