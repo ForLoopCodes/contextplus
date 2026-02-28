@@ -82,8 +82,8 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 Every file MUST start with exactly 2 comment lines (10 words each) explaining the file:
 
 \`\`\`
-// Regex-based symbol extraction engine for multi-language AST parsing
-// FEATURE: Core parsing layer for structural code analysis
+Regex-based symbol extraction engine for multi-language AST parsing
+FEATURE: Core parsing layer for structural code analysis
 \`\`\`
 
 Line 1: What the file does.

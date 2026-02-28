@@ -4,7 +4,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { resolve } from "path";
+import { mkdir, writeFile } from "fs/promises";
+import { dirname, resolve } from "path";
 import { z } from "zod";
 import { getContextTree } from "./tools/context-tree.js";
 import { getFileSkeleton } from "./tools/file-skeleton.js";
@@ -16,7 +17,79 @@ import { listRestorePoints, restorePoint } from "./git/shadow.js";
 import { semanticNavigate } from "./tools/semantic-navigate.js";
 import { getFeatureHub } from "./tools/feature-hub.js";
 
-const ROOT_DIR = process.argv[2] ? resolve(process.argv[2]) : process.cwd();
+type AgentTarget = "claude" | "cursor" | "vscode" | "windsurf";
+
+const AGENT_CONFIG_PATH: Record<AgentTarget, string> = {
+  claude: ".mcp.json",
+  cursor: ".cursor/mcp.json",
+  vscode: ".vscode/mcp.json",
+  windsurf: ".windsurf/mcp.json",
+};
+
+const passthroughArgs = process.argv.slice(2);
+const ROOT_DIR = passthroughArgs[0] && passthroughArgs[0] !== "init"
+  ? resolve(passthroughArgs[0])
+  : process.cwd();
+
+function parseAgentTarget(input?: string): AgentTarget {
+  const normalized = (input ?? "claude").toLowerCase();
+  if (normalized === "claude" || normalized === "claude-code") return "claude";
+  if (normalized === "cursor") return "cursor";
+  if (normalized === "vscode" || normalized === "vs-code" || normalized === "vs") return "vscode";
+  if (normalized === "windsurf") return "windsurf";
+  throw new Error(`Unsupported coding agent \"${input}\". Use one of: claude, cursor, vscode, windsurf.`);
+}
+
+function parseRunner(args: string[]): "npx" | "bunx" {
+  const explicit = args.find((arg) => arg.startsWith("--runner="));
+  if (explicit) {
+    const value = explicit.split("=")[1];
+    if (value === "npx" || value === "bunx") return value;
+    throw new Error(`Unsupported runner \"${value}\". Use --runner=npx or --runner=bunx.`);
+  }
+  const runnerFlagIndex = args.findIndex((arg) => arg === "--runner");
+  if (runnerFlagIndex >= 0) {
+    const value = args[runnerFlagIndex + 1];
+    if (value === "npx" || value === "bunx") return value;
+    throw new Error(`Unsupported runner \"${value}\". Use --runner=npx or --runner=bunx.`);
+  }
+  const userAgent = (process.env.npm_config_user_agent ?? "").toLowerCase();
+  const execPath = (process.env.npm_execpath ?? "").toLowerCase();
+  if (userAgent.includes("bun/") || execPath.includes("bun")) return "bunx";
+  return "npx";
+}
+
+function buildMcpConfig(runner: "npx" | "bunx") {
+  const commandArgs = runner === "npx" ? ["-y", "contextplus"] : ["contextplus"];
+  return JSON.stringify(
+    {
+      mcpServers: {
+        contextplus: {
+          command: runner,
+          args: commandArgs,
+          env: {
+            OLLAMA_EMBED_MODEL: "nomic-embed-text",
+            OLLAMA_CHAT_MODEL: "gemma2:27b",
+            OLLAMA_API_KEY: "YOUR_OLLAMA_API_KEY",
+          },
+        },
+      },
+    },
+    null,
+    2,
+  );
+}
+
+async function runInitCommand(args: string[]) {
+  const nonFlags = args.filter((arg) => !arg.startsWith("--"));
+  const target = parseAgentTarget(nonFlags[0]);
+  const runner = parseRunner(args);
+  const outputPath = resolve(process.cwd(), AGENT_CONFIG_PATH[target]);
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${buildMcpConfig(runner)}\n`, "utf8");
+  console.error(`Context+ initialized for ${target} using ${runner}.`);
+  console.error(`Wrote MCP config: ${outputPath}`);
+}
 
 const server = new McpServer({
   name: "contextplus",
@@ -210,6 +283,11 @@ server.tool(
 );
 
 async function main() {
+  const args = process.argv.slice(2);
+  if (args[0] === "init") {
+    await runInitCommand(args.slice(1));
+    return;
+  }
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(`Context+ MCP server running on stdio | root: ${ROOT_DIR}`);

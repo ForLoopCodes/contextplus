@@ -31,7 +31,6 @@ label,
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -47,15 +46,11 @@ label,
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
 }
 
-/* ── Responsive ────────────────────────────── */
-
-/* Extra-large desktop (≥1600px) — wider hero padding */
 @media (min-width: 1600px) {
   .hero-diagram-row {
     padding-left: 200px !important;
@@ -81,7 +76,6 @@ label,
     min-height: 60vh !important;
   }
 }
-/* Large desktop (≥1440px) — scale diagram up */
 @media (min-width: 1440px) {
   .tool-square {
     width: 180px !important;
@@ -92,7 +86,6 @@ label,
   }
 }
 
-/* Extra-large (≥1800px) */
 @media (min-width: 1800px) {
   .tool-square {
     width: 220px !important;
@@ -103,7 +96,6 @@ label,
   }
 }
 
-/* Ultra-wide (≥2200px) */
 @media (min-width: 2200px) {
   .tool-square {
     width: 260px !important;
@@ -111,7 +103,6 @@ label,
   }
 }
 
-/* Tablet (≤1024px) — stack groups vertically */
 @media (max-width: 1024px) {
   .hero-diagram-row {
     padding: 48px 60px 20px !important;
@@ -177,7 +168,6 @@ label,
   }
 }
 
-/* Mobile (≤768px) */
 @media (max-width: 768px) {
   .hero-diagram-row {
     padding: 32px 20px 16px !important;
@@ -255,7 +245,6 @@ label,
   }
 }
 
-/* Small mobile (≤480px) */
 @media (max-width: 480px) {
   .tool-square {
     height: 60px !important;
@@ -269,7 +258,6 @@ label,
   }
 }
 
-/* Hide IDE dashed box gap on smaller screens */
 @media (max-width: 1450px) {
   .ide-inner-row {
     gap: 0 !important;

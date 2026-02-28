@@ -58,6 +58,15 @@ No installation needed. Add to your IDE's MCP config:
 }
 ```
 
+Or generate the MCP config file directly in your current directory:
+
+```bash
+npx -y contextplus init claude
+bunx contextplus init cursor
+```
+
+Supported coding agent names: `claude`, `cursor`, `vscode`, `windsurf`.
+
 Config file locations:
 
 | IDE         | Config File          |
@@ -91,11 +100,11 @@ Three layers built with TypeScript over stdio using the Model Context Protocol S
 
 ## Config
 
-| Variable             | Default            | Description                       |
-| -------------------- | ------------------ | --------------------------------- |
-| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model                   |
-| `OLLAMA_API_KEY`     | —                  | Cloud auth (auto-detected by SDK) |
-| `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Chat model for cluster labeling   |
+| Variable             | Default            | Description                     |
+| -------------------- | ------------------ | ------------------------------- |
+| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model                 |
+| `OLLAMA_API_KEY`     | —                  | Ollama Cloud API key            |
+| `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Chat model for cluster labeling |
 
 ## Test
 

@@ -15,12 +15,13 @@ const runners = [
 ];
 
 function buildConfig(runner: string): string {
+  const commandArgs = runner === "npx" ? ["-y", "contextplus"] : ["contextplus"];
   return JSON.stringify(
     {
       mcpServers: {
         contextplus: {
           command: runner,
-          args: ["-y", "contextplus"],
+          args: commandArgs,
           env: {
             OLLAMA_EMBED_MODEL: "nomic-embed-text",
             OLLAMA_CHAT_MODEL: "gemma2:27b",
@@ -32,6 +33,12 @@ function buildConfig(runner: string): string {
     null,
     2,
   );
+}
+
+function buildInitCommand(runner: string, agent: string): string {
+  return runner === "npx"
+    ? `npx -y contextplus init ${agent}`
+    : `bunx contextplus init ${agent}`;
 }
 
 function highlightJson(json: string): ReactNode[] {
@@ -48,7 +55,6 @@ function highlightJson(json: string): ReactNode[] {
     }
 
     if (match[1]) {
-      // Key
       parts.push(
         <span key={match.index} style={{ color: "#111" }}>
           {match[1]}
@@ -61,28 +67,24 @@ function highlightJson(json: string): ReactNode[] {
         ),
       );
     } else if (match[2]) {
-      // String value
       parts.push(
         <span key={match.index} style={{ color: "#555" }}>
           {match[2]}
         </span>,
       );
     } else if (match[3]) {
-      // Boolean / null
       parts.push(
         <span key={match.index} style={{ color: "#333" }}>
           {match[3]}
         </span>,
       );
     } else if (match[4]) {
-      // Number
       parts.push(
         <span key={match.index} style={{ color: "#333" }}>
           {match[4]}
         </span>,
       );
     } else if (match[5]) {
-      // Punctuation
       parts.push(
         <span key={match.index} style={{ color: "#999" }}>
           {match[5]}
@@ -104,14 +106,23 @@ export default function IdeSetup() {
   const [activeIde, setActiveIde] = useState("claude");
   const [activeRunner, setActiveRunner] = useState("bunx");
   const [copied, setCopied] = useState(false);
+  const [copiedInit, setCopiedInit] = useState(false);
 
   const ide = ides.find((i) => i.id === activeIde)!;
   const config = buildConfig(activeRunner);
+  const initCommand = buildInitCommand(activeRunner, activeIde);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(config).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleCopyInit = () => {
+    navigator.clipboard.writeText(initCommand).then(() => {
+      setCopiedInit(true);
+      setTimeout(() => setCopiedInit(false), 2000);
     });
   };
 
@@ -170,7 +181,6 @@ export default function IdeSetup() {
               gap: 8,
             }}
           >
-            {/* IDE tabs — left */}
             <div style={{ display: "flex", gap: 0 }}>
               {ides.map((i) => (
                 <button
@@ -198,7 +208,6 @@ export default function IdeSetup() {
                 </button>
               ))}
             </div>
-            {/* Runner tabs — right */}
             <div style={{ display: "flex", gap: 0 }}>
               {runners.map((r) => (
                 <button
@@ -228,7 +237,6 @@ export default function IdeSetup() {
             </div>
           </div>
 
-          {/* Code block */}
           <div
             style={{
               background: "rgba(0,0,0,0.04)",
@@ -288,6 +296,68 @@ export default function IdeSetup() {
               }}
             >
               {highlightJson(config)}
+            </pre>
+          </div>
+
+          <div
+            style={{
+              background: "rgba(0,0,0,0.04)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              borderRadius: 14,
+              overflow: "hidden",
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "10px 24px 0",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 300,
+                  color: "#888",
+                  fontFamily: "var(--font-geist-mono)",
+                }}
+              >
+                Terminal
+              </span>
+              <button
+                onClick={handleCopyInit}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  fontSize: 13,
+                  fontWeight: 300,
+                  color: copiedInit ? "#000" : "#888",
+                  fontFamily: "var(--font-geist-mono)",
+                  transition: "color 0.15s",
+                }}
+              >
+                {copiedInit ? "copied" : "copy"}
+              </button>
+            </div>
+            <pre
+              style={{
+                fontFamily: "var(--font-geist-mono)",
+                fontSize: 13,
+                fontWeight: 300,
+                lineHeight: "20px",
+                color: "#333",
+                padding: "12px 24px 20px",
+                overflow: "auto",
+                whiteSpace: "pre",
+                margin: 0,
+              }}
+            >
+              {initCommand}
             </pre>
           </div>
 

@@ -59,15 +59,12 @@ const functions = [
   },
 ];
 
-// Breakpoint-based card sizing — actual size changes, no CSS scale
 function getCardConfig(width: number) {
   if (width >= 1800) return { cardSize: 360, stackDx: -28, stackDy: 28 };
   if (width >= 1400) return { cardSize: 300, stackDx: -24, stackDy: 24 };
   if (width >= 1025) return { cardSize: 250, stackDx: -20, stackDy: 20 };
   if (width >= 850) return { cardSize: 220, stackDx: -18, stackDy: 18 };
-  // Mobile / small tablet (500-849)
   if (width >= 500) return { cardSize: 240, stackDx: -18, stackDy: 18 };
-  // Small mobile (<500)
   return { cardSize: 220, stackDx: -16, stackDy: 16 };
 }
 
@@ -105,16 +102,13 @@ export default function IsometricDiagram() {
     setHoveredIdx(null);
     setAnimCardId(topGroupIdx);
 
-    // Phase 1: fade out top card
     setAnimPhase("fade-out");
 
     setTimeout(() => {
-      // Reorder: move top to back
       setOrder((prev) => {
         const [top, ...rest] = prev;
         return [...rest, top];
       });
-      // Phase 2: new top card fades in
       setAnimPhase("fade-in");
 
       setTimeout(() => {
@@ -129,7 +123,6 @@ export default function IsometricDiagram() {
     cycleTopCard();
   };
 
-  // Auto-cycle every 3s, pauses on hover or during animation
   const isPaused = hoveredIdx !== null || animating;
   useEffect(() => {
     if (isPaused) return;
@@ -139,13 +132,13 @@ export default function IsometricDiagram() {
     return () => clearInterval(timer);
   }, [isPaused, cycleTopCard]);
 
-  // Space computation
   const maxDx = Math.abs(STACK_DX) * (functions.length - 1);
   const maxDy = Math.abs(STACK_DY) * (functions.length - 1);
   const stackW = CARD_SIZE + maxDx;
   const stackH = CARD_SIZE + maxDy;
 
-  const isSmallDesktop = windowWidth >= 850 && windowWidth < 1800;
+  const isLargeDesktop = windowWidth >= 1400 && windowWidth < 1800;
+  const isSmallDesktop = windowWidth >= 850 && windowWidth < 1400;
   const isVerySmallDesktop = windowWidth >= 850 && windowWidth < 1250;
 
   return (
@@ -160,8 +153,10 @@ export default function IsometricDiagram() {
           : isVerySmallDesktop
             ? -120
             : isSmallDesktop
-              ? -450
-              : -650,
+              ? -120
+              : isLargeDesktop
+                ? -400
+                : -600,
         display: "flex",
         alignItems: isMobile ? "center" : "flex-end",
         aspectRatio: isMobile ? "1 / 1" : undefined,
@@ -194,7 +189,6 @@ export default function IsometricDiagram() {
             const xPos = maxDx + visualIdx * STACK_DX;
             const yPos = visualIdx * STACK_DY;
 
-            // Incremental border: top = black, bottom = lightest
             const t = visualIdx / (functions.length - 1);
             const gray = Math.round(t * 210);
             const borderColor = `rgb(${gray},${gray},${gray})`;
