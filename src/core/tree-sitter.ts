@@ -190,6 +190,7 @@ function walkTree(rootNode: TSNode, defTypes: Record<string, string>, maxDepth: 
         name: extractName(node, kindStr),
         kind: mapKind(kindStr),
         line: node.startPosition.row + 1,
+        endLine: node.endPosition.row + 1,
         signature: extractSignature(node),
         children: [],
       };

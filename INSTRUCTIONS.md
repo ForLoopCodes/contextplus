@@ -17,9 +17,10 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 
 **Tools Layer** (`src/tools/`):
 
-- `context-tree.ts` — Token-aware structural tree with Level 0/1/2 pruning.
-- `file-skeleton.ts` — Function signatures without bodies for quick file understanding.
-- `semantic-search.ts` — Ollama-powered semantic code search with 60s cache TTL.
+- `context-tree.ts` — Token-aware structural tree with symbol line ranges and Level 0/1/2 pruning.
+- `file-skeleton.ts` — Function signatures with line ranges, without reading full bodies.
+- `semantic-search.ts` — Ollama-powered semantic file search with symbol definition lines and 60s cache TTL.
+- `semantic-identifiers.ts` — Identifier-level semantic search returning ranked definitions + call chains with line numbers.
 - `semantic-navigate.ts` — Browse-by-meaning navigator using spectral clustering and Ollama labeling.
 - `blast-radius.ts` — Symbol usage tracer across the entire codebase.
 - `static-analysis.ts` — Native linter runner (tsc, eslint, py_compile, cargo check, go vet).
@@ -34,7 +35,7 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 
 - `shadow.ts` — Shadow restore point system for undo without touching git history.
 
-**Entry Point**: `src/index.ts` registers 10 MCP tools and starts the stdio transport. Accepts an optional CLI argument for the target project root directory (defaults to `process.cwd()`).
+**Entry Point**: `src/index.ts` registers 11 MCP tools and starts the stdio transport. Accepts an optional CLI argument for the target project root directory (defaults to `process.cwd()`).
 
 ## Environment Variables
 
@@ -118,10 +119,11 @@ Strict order within every file:
 
 | Tool                   | When to Use                                            |
 | ---------------------- | ------------------------------------------------------ |
-| `get_context_tree`     | Start of every task. Map the territory.                |
+| `get_context_tree`     | Start of every task. Map files + symbols with line ranges. |
 | `semantic_navigate`    | Browse codebase by meaning, not directory structure.   |
-| `get_file_skeleton`    | MUST run before full reads. Get signatures first.      |
-| `semantic_code_search` | Find code by concept when location is unknown.         |
+| `get_file_skeleton`    | MUST run before full reads. Get signatures + line ranges first. |
+| `semantic_code_search` | Find relevant files by concept with symbol definition lines. |
+| `semantic_identifier_search` | Find closest functions/classes/variables and ranked call chains with line numbers. |
 | `get_blast_radius`     | Before deleting or modifying any symbol.               |
 | `run_static_analysis`  | After writing code. Catch dead code deterministically. |
 | `propose_commit`       | The ONLY way to save files. Validates before writing.  |

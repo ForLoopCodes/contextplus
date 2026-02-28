@@ -3,7 +3,7 @@
 
 import { Ollama } from "ollama";
 import { walkDirectory } from "../core/walker.js";
-import { isSupportedFile } from "../core/parser.js";
+import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js";
 import { readFile } from "fs/promises";
 import { spectralCluster, findPathPattern } from "../core/clustering.js";
 
@@ -17,6 +17,7 @@ interface FileInfo {
   relativePath: string;
   header: string;
   content: string;
+  symbolPreview: string[];
 }
 
 interface ClusterNode {
@@ -64,6 +65,10 @@ function extractHeader(content: string): string {
     }
   }
   return headerLines.join(" ").substring(0, 200);
+}
+
+function formatLineRange(line: number, endLine: number): string {
+  return endLine > line ? `L${line}-L${endLine}` : `L${line}`;
 }
 
 async function labelSiblingClusters(clusters: { files: FileInfo[]; pathPattern: string | null }[]): Promise<string[]> {
@@ -163,7 +168,8 @@ function renderClusterTree(node: ClusterNode, indent: number = 0): string {
   } else {
     for (const file of node.files) {
       const label = file.header ? ` — ${file.header}` : "";
-      result += `${pad}  ${file.relativePath}${label}\n`;
+      const symbols = file.symbolPreview.length > 0 ? ` | symbols: ${file.symbolPreview.join(", ")}` : "";
+      result += `${pad}  ${file.relativePath}${label}${symbols}\n`;
     }
   }
 
@@ -183,10 +189,21 @@ export async function semanticNavigate(options: SemanticNavigateOptions): Promis
   for (const entry of fileEntries) {
     try {
       const content = await readFile(entry.path, "utf-8");
+      let header = extractHeader(content);
+      let symbolPreview: string[] = [];
+      try {
+        const analysis = await analyzeFile(entry.path);
+        if (analysis.header) header = analysis.header;
+        symbolPreview = flattenSymbols(analysis.symbols)
+          .slice(0, 3)
+          .map((s) => `${s.name}@${formatLineRange(s.line, s.endLine)}`);
+      } catch {
+      }
       files.push({
         relativePath: entry.relativePath,
-        header: extractHeader(content),
+        header,
         content: content.substring(0, 500),
+        symbolPreview,
       });
     } catch {
     }
@@ -216,7 +233,8 @@ export async function semanticNavigate(options: SemanticNavigateOptions): Promis
 
     const lines = [`Semantic Navigator: ${files.length} files\n`];
     for (let i = 0; i < files.length; i++) {
-      lines.push(`  ${files[i].relativePath} — ${fileLabels[i] || files[i].header}`);
+      const symbols = files[i].symbolPreview.length > 0 ? ` | symbols: ${files[i].symbolPreview.join(", ")}` : "";
+      lines.push(`  ${files[i].relativePath} — ${fileLabels[i] || files[i].header}${symbols}`);
     }
     return lines.join("\n");
   }

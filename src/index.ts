@@ -9,7 +9,9 @@ import { dirname, resolve } from "path";
 import { z } from "zod";
 import { getContextTree } from "./tools/context-tree.js";
 import { getFileSkeleton } from "./tools/file-skeleton.js";
+import { ensureMcpDataDir } from "./core/embeddings.js";
 import { semanticCodeSearch, invalidateSearchCache } from "./tools/semantic-search.js";
+import { semanticIdentifierSearch, invalidateIdentifierSearchCache } from "./tools/semantic-identifiers.js";
 import { getBlastRadius } from "./tools/blast-radius.js";
 import { runStaticAnalysis } from "./tools/static-analysis.js";
 import { proposeCommit } from "./tools/propose-commit.js";
@@ -100,7 +102,7 @@ const server = new McpServer({
 
 server.tool(
   "get_context_tree",
-  "Get the structural tree of the project with file headers, function names, classes, enums. " +
+  "Get the structural tree of the project with file headers, function names, classes, enums, and line ranges. " +
   "Automatically reads 2-line headers for file purpose. Dynamic token-aware pruning: " +
   "Level 2 (deep symbols) -> Level 1 (headers only) -> Level 0 (file names only) based on project size.",
   {
@@ -124,9 +126,37 @@ server.tool(
 );
 
 server.tool(
+  "semantic_identifier_search",
+  "Search semantic intent at identifier level (functions, methods, classes, variables) with definition lines and ranked call sites. " +
+  "Uses embeddings over symbol signatures and source context, then returns line-numbered definition/call chains.",
+  {
+    query: z.string().describe("Natural language intent to match identifiers and usages."),
+    top_k: z.number().optional().describe("How many identifiers to return. Default: 5."),
+    top_calls_per_identifier: z.number().optional().describe("How many ranked call sites per identifier. Default: 10."),
+    include_kinds: z.array(z.string()).optional().describe("Optional kinds filter, e.g. [\"function\", \"method\", \"variable\"]."),
+    semantic_weight: z.number().optional().describe("Weight for semantic similarity score. Default: 0.78."),
+    keyword_weight: z.number().optional().describe("Weight for keyword overlap score. Default: 0.22."),
+  },
+  async ({ query, top_k, top_calls_per_identifier, include_kinds, semantic_weight, keyword_weight }) => ({
+    content: [{
+      type: "text" as const,
+      text: await semanticIdentifierSearch({
+        rootDir: ROOT_DIR,
+        query,
+        topK: top_k,
+        topCallsPerIdentifier: top_calls_per_identifier,
+        includeKinds: include_kinds,
+        semanticWeight: semantic_weight,
+        keywordWeight: keyword_weight,
+      }),
+    }],
+  }),
+);
+
+server.tool(
   "get_file_skeleton",
   "Get detailed function signatures, class methods, and type definitions of a specific file WITHOUT reading the full body. " +
-  "Shows the API surface: function names, parameters, return types. Perfect for understanding how to use code without loading it all.",
+  "Shows the API surface: function names, parameters, return types, and line ranges. Perfect for understanding how to use code without loading it all.",
   {
     file_path: z.string().describe("Path to the file to inspect (relative to project root)."),
   },
@@ -141,7 +171,7 @@ server.tool(
 server.tool(
   "semantic_code_search",
   "Search the codebase by MEANING, not just exact variable names. Uses Ollama embeddings over file headers and symbol names. " +
-  "Example: searching 'user authentication' finds files about login, sessions, JWT even if those exact words aren't used.",
+  "Example: searching 'user authentication' finds files about login, sessions, JWT even if those exact words aren't used, with matched definition lines.",
   {
     query: z.string().describe("Natural language description of what you're looking for. Example: 'how are transactions signed'"),
     top_k: z.number().optional().describe("Number of matches to return. Default: 5."),
@@ -224,6 +254,7 @@ server.tool(
   },
   async ({ file_path, new_content }) => {
     invalidateSearchCache();
+    invalidateIdentifierSearchCache();
     return {
       content: [{
         type: "text" as const,
@@ -259,6 +290,7 @@ server.tool(
   async ({ point_id }) => {
     const restored = await restorePoint(ROOT_DIR, point_id);
     invalidateSearchCache();
+    invalidateIdentifierSearchCache();
     return {
       content: [{
         type: "text" as const,
@@ -316,6 +348,7 @@ async function main() {
     await runInitCommand(args.slice(1));
     return;
   }
+  await ensureMcpDataDir(ROOT_DIR);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(`Context+ MCP server running on stdio | root: ${ROOT_DIR}`);

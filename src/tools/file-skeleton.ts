@@ -10,6 +10,10 @@ export interface SkeletonOptions {
   rootDir: string;
 }
 
+function formatLineRange(line: number, endLine: number): string {
+  return endLine > line ? `L${line}-L${endLine}` : `L${line}`;
+}
+
 function formatSignatureBlock(analysis: FileAnalysis): string {
   const lines: string[] = [];
 
@@ -19,9 +23,9 @@ function formatSignatureBlock(analysis: FileAnalysis): string {
   }
 
   for (const sym of analysis.symbols) {
-    lines.push(sym.signature + ";");
+    lines.push(`[${sym.kind}] ${formatLineRange(sym.line, sym.endLine)} ${sym.signature};`);
     for (const child of sym.children) {
-      lines.push(`  ${child.signature};`);
+      lines.push(`  [${child.kind}] ${formatLineRange(child.line, child.endLine)} ${child.signature};`);
     }
     if (sym.children.length > 0) lines.push("");
   }

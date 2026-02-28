@@ -18,8 +18,14 @@ const functions = [
   {
     id: "semantic-search",
     label: "Semantic Search",
-    desc: "Natural language search across symbols",
+    desc: "File-level semantic search with definition lines",
     color: "#333333",
+  },
+  {
+    id: "identifier-search",
+    label: "Identifier Search",
+    desc: "Function and variable search with ranked call chains",
+    color: "#3a3a3a",
   },
   {
     id: "semantic-navigate",

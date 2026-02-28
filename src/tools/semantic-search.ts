@@ -2,7 +2,7 @@
 // Uses vector embeddings with cosine similarity for concept matching
 
 import { walkDirectory } from "../core/walker.js";
-import { analyzeFile, isSupportedFile } from "../core/parser.js";
+import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js";
 import { SearchIndex, type SearchDocument, type SearchQueryOptions } from "../core/embeddings.js";
 import { readFile } from "fs/promises";
 import { extname } from "path";
@@ -57,11 +57,19 @@ async function buildIndex(rootDir: string): Promise<SearchIndex> {
     if (isSupportedFile(file.path)) {
       try {
         const analysis = await analyzeFile(file.path);
+        const flatSymbols = flattenSymbols(analysis.symbols);
         docs.push({
           path: file.relativePath,
           header: analysis.header,
-          symbols: analysis.symbols.flatMap((s) => [s.name, ...s.children.map((c) => c.name)]),
-          content: analysis.symbols.map((s) => s.signature).join(" "),
+          symbols: flatSymbols.map((s) => s.name),
+          symbolEntries: flatSymbols.map((s) => ({
+            name: s.name,
+            kind: s.kind,
+            line: s.line,
+            endLine: s.endLine,
+            signature: s.signature,
+          })),
+          content: flatSymbols.map((s) => s.signature).join(" "),
         });
       } catch {
       }
@@ -116,6 +124,7 @@ export async function semanticCodeSearch(options: SemanticSearchOptions): Promis
     lines.push(`   Semantic: ${r.semanticScore}% | Keyword: ${r.keywordScore}%`);
     if (r.header) lines.push(`   Header: ${r.header}`);
     if (r.matchedSymbols.length > 0) lines.push(`   Matched symbols: ${r.matchedSymbols.join(", ")}`);
+    if (r.matchedSymbolLocations.length > 0) lines.push(`   Definition lines: ${r.matchedSymbolLocations.join(", ")}`);
     lines.push("");
   }
 

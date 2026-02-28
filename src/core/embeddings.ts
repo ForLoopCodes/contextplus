@@ -9,7 +9,16 @@ export interface SearchDocument {
   path: string;
   header: string;
   symbols: string[];
+  symbolEntries?: SymbolSearchEntry[];
   content: string;
+}
+
+export interface SymbolSearchEntry {
+  name: string;
+  kind?: string;
+  line: number;
+  endLine?: number;
+  signature?: string;
 }
 
 export interface SearchResult {
@@ -19,6 +28,7 @@ export interface SearchResult {
   keywordScore: number;
   header: string;
   matchedSymbols: string[];
+  matchedSymbolLocations: string[];
 }
 
 export interface SearchQueryOptions {
@@ -43,7 +53,7 @@ interface ResolvedSearchQueryOptions {
   requireSemanticMatch: boolean;
 }
 
-interface EmbeddingCache {
+export interface EmbeddingCache {
   [path: string]: { hash: string; vector: number[] };
 }
 
@@ -155,16 +165,38 @@ function computeCombinedScore(semanticScore: number, keywordScore: number, optio
 }
 
 async function loadCache(rootDir: string): Promise<EmbeddingCache> {
+  return loadEmbeddingCache(rootDir, CACHE_FILE);
+}
+
+async function saveCache(rootDir: string, cache: EmbeddingCache): Promise<void> {
+  await saveEmbeddingCache(rootDir, cache, CACHE_FILE);
+}
+
+export async function ensureMcpDataDir(rootDir: string): Promise<void> {
+  await mkdir(join(rootDir, CACHE_DIR), { recursive: true });
+}
+
+export async function loadEmbeddingCache(rootDir: string, fileName: string): Promise<EmbeddingCache> {
   try {
-    return JSON.parse(await readFile(join(rootDir, CACHE_DIR, CACHE_FILE), "utf-8"));
+    return JSON.parse(await readFile(join(rootDir, CACHE_DIR, fileName), "utf-8"));
   } catch {
     return {};
   }
 }
 
-async function saveCache(rootDir: string, cache: EmbeddingCache): Promise<void> {
-  await mkdir(join(rootDir, CACHE_DIR), { recursive: true });
-  await writeFile(join(rootDir, CACHE_DIR, CACHE_FILE), JSON.stringify(cache));
+export async function saveEmbeddingCache(rootDir: string, cache: EmbeddingCache, fileName: string): Promise<void> {
+  await ensureMcpDataDir(rootDir);
+  await writeFile(join(rootDir, CACHE_DIR, fileName), JSON.stringify(cache));
+}
+
+function formatLineRange(line: number, endLine?: number): string {
+  if (endLine && endLine > line) return `L${line}-L${endLine}`;
+  return `L${line}`;
+}
+
+function getMatchedSymbolEntries(symbols: SymbolSearchEntry[], queryTerms: Set<string>): SymbolSearchEntry[] {
+  if (queryTerms.size === 0) return [];
+  return symbols.filter((symbol) => splitCamelCase(symbol.name).some((term) => queryTerms.has(term)));
 }
 
 export class SearchIndex {
@@ -207,13 +239,24 @@ export class SearchIndex {
     const options = resolveSearchOptions(optionsOrTopK);
     const [queryVec] = await fetchEmbedding(query);
     const queryTerms = new Set(splitCamelCase(query));
-    const scores: { idx: number; score: number; semanticScore: number; keywordScore: number; matchedSymbols: string[] }[] = [];
+    const scores: {
+      idx: number;
+      score: number;
+      semanticScore: number;
+      keywordScore: number;
+      matchedSymbols: string[];
+      matchedSymbolLocations: string[];
+    }[] = [];
 
     for (let i = 0; i < this.vectors.length; i++) {
       if (!this.vectors[i]) continue;
       const doc = this.documents[i];
       const semanticScore = cosine(queryVec, this.vectors[i]);
-      const matchedSymbols = getMatchedSymbols(doc.symbols, queryTerms);
+      const matchedEntries = doc.symbolEntries ? getMatchedSymbolEntries(doc.symbolEntries, queryTerms) : [];
+      const matchedSymbols = matchedEntries.length > 0
+        ? matchedEntries.map((entry) => entry.name)
+        : getMatchedSymbols(doc.symbols, queryTerms);
+      const matchedSymbolLocations = matchedEntries.map((entry) => `${entry.name}@${formatLineRange(entry.line, entry.endLine)}`);
       const keywordScore = computeKeywordScore(query, queryTerms, doc, matchedSymbols);
       const score = computeCombinedScore(semanticScore, keywordScore, options);
 
@@ -223,13 +266,13 @@ export class SearchIndex {
       if (keywordScore < options.minKeywordScore) continue;
       if (score < options.minCombinedScore) continue;
 
-      scores.push({ idx: i, score, semanticScore, keywordScore, matchedSymbols });
+      scores.push({ idx: i, score, semanticScore, keywordScore, matchedSymbols, matchedSymbolLocations });
     }
 
     return scores
       .sort((a, b) => b.score - a.score || b.keywordScore - a.keywordScore || b.semanticScore - a.semanticScore)
       .slice(0, options.topK)
-      .map(({ idx, score, semanticScore, keywordScore, matchedSymbols }) => {
+      .map(({ idx, score, semanticScore, keywordScore, matchedSymbols, matchedSymbolLocations }) => {
         const doc = this.documents[idx];
         return {
           path: doc.path,
@@ -238,6 +281,7 @@ export class SearchIndex {
           keywordScore: Math.round(keywordScore * 1000) / 10,
           header: doc.header,
           matchedSymbols,
+          matchedSymbolLocations,
         };
       });
   }

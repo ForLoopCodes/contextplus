@@ -16,9 +16,10 @@ https://github.com/user-attachments/assets/a97a451f-c9b4-468d-b036-15b65fc13e79
 
 | Tool                   | Description                                                                                                                                       |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get_context_tree`     | Structural AST tree of a project with file headers, function names, classes, and enums. Dynamic token-aware pruning shrinks output automatically. |
-| `get_file_skeleton`    | Function signatures, class methods, and type definitions without reading the full body. Shows the API surface.                                    |
-| `semantic_code_search` | Search the codebase by meaning, not exact text. Uses Ollama embeddings over file headers and symbol names.                                        |
+| `get_context_tree`     | Structural AST tree of a project with file headers and symbol ranges (line numbers for functions/classes/methods). Dynamic pruning shrinks output automatically. |
+| `get_file_skeleton`    | Function signatures, class methods, and type definitions with line ranges, without reading full bodies. Shows the API surface.                    |
+| `semantic_code_search` | Search by meaning, not exact text. Uses embeddings over file headers/symbols and returns matched symbol definition lines.                          |
+| `semantic_identifier_search` | Identifier-level semantic retrieval for functions/classes/variables with ranked call sites and line numbers.                               |
 | `semantic_navigate`    | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters.                                    |
 
 ### Analysis
@@ -127,9 +128,11 @@ Three layers built with TypeScript over stdio using the Model Context Protocol S
 
 **Core** (`src/core/`) — Multi-language AST parsing (tree-sitter, 43 extensions), gitignore-aware traversal, Ollama vector embeddings with disk cache, wikilink hub graph.
 
-**Tools** (`src/tools/`) — 10 MCP tools exposing structural, semantic, and operational capabilities.
+**Tools** (`src/tools/`) — 11 MCP tools exposing structural, semantic, and operational capabilities.
 
 **Git** (`src/git/`) — Shadow restore point system for undo without touching git history.
+
+**Runtime Cache** (`.mcp_data/`) — created on server startup; stores reusable file, identifier, and call-site embeddings to avoid repeated GPU/CPU embedding work.
 
 ## Config
 

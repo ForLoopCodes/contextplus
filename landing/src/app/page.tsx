@@ -12,7 +12,7 @@ const toolGroups = [
       { color: "#000000", label: "Context Tree" },
       { color: "#111111", label: "File Skeleton" },
       { color: "#222222", label: "Semantic Search" },
-      { color: "#333333", label: "Semantic Navigate" },
+      { color: "#333333", label: "Semantic Identifiers" },
     ],
   },
   {
@@ -47,25 +47,33 @@ const toolGroups = [
 const toolRefRows = [
   {
     name: "get_context_tree",
-    desc: "Get the structural AST tree of a project with file headers, function names, classes, and enums. Dynamic token-aware pruning shrinks output automatically.",
+    desc: "Get the structural AST tree of a project with file headers plus line-numbered function/class/method symbols. Dynamic token-aware pruning shrinks output automatically.",
     input:
       "{\n  target_path?: string,\n  depth_limit?: number,\n  include_symbols?: boolean,\n  max_tokens?: number\n}",
     output:
-      '"src/\n  index.ts — Entry point\n    getStars()\n    Home()\n  utils/\n    parser.ts — AST parsing\n      parseFile()\n      walkTree()"',
+      '"src/\n  index.ts — Entry point\n    function: getStars() (L170-L181)\n    function: Home() (L183-L760)\n  utils/\n    parser.ts — AST parsing\n      function: parseFile() (L22-L84)\n      function: walkTree() (L86-L132)"',
   },
   {
     name: "get_file_skeleton",
-    desc: "Get function signatures, class methods, and type definitions of a file without reading the full body. Shows the API surface.",
+    desc: "Get function signatures, class methods, and type definitions of a file with line ranges, without reading the full body.",
     input: "{ file_path: string }",
     output:
-      '"export function parseFile(\n  filePath: string,\n  options?: ParseOptions\n): Promise<AST>"\n\n"export class Walker {\n  walk(node: Node): void\n  getSymbols(): Symbol[]\n}"',
+      '"[function] L12-L58 export function parseFile(\n  filePath: string,\n  options?: ParseOptions\n): Promise<AST>;\n\n[class] L60-L130 export class Walker;\n  [method] L72-L94 walk(node: Node): void;\n  [method] L96-L118 getSymbols(): Symbol[];"',
   },
   {
     name: "semantic_code_search",
-    desc: "Search the codebase by meaning, not exact text. Uses Ollama embeddings over file headers and symbol names.",
+    desc: "Search the codebase by meaning, not exact text. Uses embeddings over file headers/symbols and returns matched definition lines.",
     input: "{ query: string, top_k?: number }",
     output:
-      '"1. src/auth/jwt.ts (0.94)\n   — JWT token validation\n2. src/auth/session.ts (0.87)\n   — Session management\n3. src/middleware/guard.ts (0.82)\n   — Route protection"',
+      '"1. src/auth/jwt.ts (94.0% total)\n   Semantic: 91.5% | Keyword: 96.2%\n   Definition lines: verifyToken@L20-L58, signToken@L60-L102\n2. src/auth/session.ts (87.4% total)\n   Definition lines: createSession@L12-L42"',
+  },
+  {
+    name: "semantic_identifier_search",
+    desc: "Find closest functions/classes/variables by meaning, then return ranked definition and call-chain locations with line numbers.",
+    input:
+      "{\n  query: string,\n  top_k?: number,\n  top_calls_per_identifier?: number,\n  include_kinds?: string[]\n}",
+    output:
+      '"1. function verifyToken — src/auth/jwt.ts (L20-L58)\n   Score: 92.4%\n   Calls (3/3):\n     1. src/middleware/guard.ts:L33 (88.1%) verifyToken(token)\n     2. src/routes/api.ts:L12 (84.7%) const user = verifyToken(raw)\n2. variable tokenExpiry — src/auth/config.ts (L8)"',
   },
   {
     name: "get_blast_radius",
@@ -227,7 +235,8 @@ export default async function Home() {
             Context+ is an MCP server designed for developers who demand 99%
             accuracy. By combining Tree-sitter AST parsing, Spectral Clustering,
             and Obsidian-style linking, Context+ turns a massive codebase into a
-            searchable, hierarchical feature graph.
+            searchable, hierarchical feature graph with line-numbered symbol and
+            call-chain intelligence.
           </p>
         </section>
       </div>
