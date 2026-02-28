@@ -40,14 +40,16 @@ Context+ is an MCP server designed for developers who demand 99% accuracy. By co
 
 ### Quick Start (npx / bunx)
 
-No installation needed. Add to your IDE's MCP config:
+No installation needed. Add Context+ to your IDE MCP config.
+
+For Claude Code, Cursor, and Windsurf, use `mcpServers`:
 
 ```json
 {
   "mcpServers": {
     "contextplus": {
-      "command": "npx",
-      "args": ["-y", "contextplus"],
+      "command": "bunx",
+      "args": ["contextplus"],
       "env": {
         "OLLAMA_EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_CHAT_MODEL": "gemma2:27b",
@@ -57,6 +59,31 @@ No installation needed. Add to your IDE's MCP config:
   }
 }
 ```
+
+For VS Code (`.vscode/mcp.json`), use `servers` and `inputs`:
+
+```json
+{
+  "servers": {
+    "contextplus": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": ["contextplus"],
+      "env": {
+        "OLLAMA_EMBED_MODEL": "nomic-embed-text",
+        "OLLAMA_CHAT_MODEL": "gemma2:27b",
+        "OLLAMA_API_KEY": "YOUR_OLLAMA_API_KEY"
+      }
+    }
+  },
+  "inputs": []
+}
+```
+
+If you prefer `npx`, use:
+
+- `"command": "npx"`
+- `"args": ["-y", "contextplus"]`
 
 Or generate the MCP config file directly in your current directory:
 
