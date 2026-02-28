@@ -145,11 +145,39 @@ server.tool(
   {
     query: z.string().describe("Natural language description of what you're looking for. Example: 'how are transactions signed'"),
     top_k: z.number().optional().describe("Number of matches to return. Default: 5."),
+    semantic_weight: z.number().optional().describe("Weight for embedding similarity in hybrid ranking. Default: 0.72."),
+    keyword_weight: z.number().optional().describe("Weight for keyword overlap in hybrid ranking. Default: 0.28."),
+    min_semantic_score: z.number().optional().describe("Minimum semantic score filter. Accepts 0-1 or 0-100."),
+    min_keyword_score: z.number().optional().describe("Minimum keyword score filter. Accepts 0-1 or 0-100."),
+    min_combined_score: z.number().optional().describe("Minimum final score filter. Accepts 0-1 or 0-100."),
+    require_keyword_match: z.boolean().optional().describe("When true, only return files with keyword overlap."),
+    require_semantic_match: z.boolean().optional().describe("When true, only return files with positive semantic similarity."),
   },
-  async ({ query, top_k }) => ({
+  async ({
+    query,
+    top_k,
+    semantic_weight,
+    keyword_weight,
+    min_semantic_score,
+    min_keyword_score,
+    min_combined_score,
+    require_keyword_match,
+    require_semantic_match,
+  }) => ({
     content: [{
       type: "text" as const,
-      text: await semanticCodeSearch({ rootDir: ROOT_DIR, query, topK: top_k }),
+      text: await semanticCodeSearch({
+        rootDir: ROOT_DIR,
+        query,
+        topK: top_k,
+        semanticWeight: semantic_weight,
+        keywordWeight: keyword_weight,
+        minSemanticScore: min_semantic_score,
+        minKeywordScore: min_keyword_score,
+        minCombinedScore: min_combined_score,
+        requireKeywordMatch: require_keyword_match,
+        requireSemanticMatch: require_semantic_match,
+      }),
     }],
   }),
 );

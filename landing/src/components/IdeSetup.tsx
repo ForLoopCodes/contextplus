@@ -379,7 +379,11 @@ export default function IdeSetup() {
               transition: "color 0.15s",
             }}
           >
-            Get your Ollama Cloud API key here
+            Before using Context+, make sure Ollama is running and install the
+            models referenced in your config.{" "}
+            <span style={{ textDecoration: "underline" }}>
+              Get your Ollama Cloud API key here
+            </span>
             <svg
               width="9"
               height="9"
