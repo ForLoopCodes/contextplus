@@ -3,21 +3,18 @@
   "main": ".open-next/worker.js",
   "name": "contextplus",
   "compatibility_date": "2026-02-28",
-  "compatibility_flags": [
-    "nodejs_compat",
-    "global_fetch_strictly_public"
-  ],
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "contextplus"
-    }
+      "service": "contextplus",
+    },
   ],
   "images": {
-    "binding": "IMAGES"
-  }
+    "binding": "IMAGES",
+  },
 }
