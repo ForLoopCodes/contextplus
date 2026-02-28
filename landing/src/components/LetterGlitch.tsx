@@ -37,7 +37,7 @@ const LetterGlitch = ({
 
   const lettersAndSymbols = Array.from(characters);
 
-  const fontSize = 16;
+  const fontSize = 12;
   const charWidth = 10;
   const charHeight = 20;
 

@@ -12,3 +12,178 @@ body {
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+/* ── Responsive ────────────────────────────── */
+
+/* Large desktop (≥1440px) — scale diagram up */
+@media (min-width: 1440px) {
+  .tool-square {
+    width: 180px !important;
+    height: 180px !important;
+  }
+  .diagram-groups {
+    gap: 24px !important;
+  }
+}
+
+/* Extra-large (≥1800px) */
+@media (min-width: 1800px) {
+  .tool-square {
+    width: 220px !important;
+    height: 220px !important;
+  }
+  .diagram-groups {
+    gap: 32px !important;
+  }
+}
+
+/* Ultra-wide (≥2200px) */
+@media (min-width: 2200px) {
+  .tool-square {
+    width: 260px !important;
+    height: 260px !important;
+  }
+}
+
+/* Tablet (≤1024px) — stack groups vertically */
+@media (max-width: 1024px) {
+  .nav-bar {
+    padding: 40px 60px 30px !important;
+  }
+  .hero-section {
+    padding: 48px 60px !important;
+  }
+  .hero-title {
+    font-size: 44px !important;
+    line-height: 56px !important;
+  }
+  .hero-text {
+    font-size: 16px !important;
+    line-height: 26px !important;
+  }
+  .diagram-outer {
+    margin-left: 60px !important;
+    margin-right: 60px !important;
+    width: auto !important;
+  }
+  .diagram-groups {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  .diagram-groups > div {
+    width: 100% !important;
+  }
+  .group-inner-col {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+  .group-inner-col > div {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+  .discovery-grid {
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+  }
+  .tool-square {
+    width: 100% !important;
+    max-width: none !important;
+    height: 80px !important;
+    aspect-ratio: auto !important;
+  }
+}
+
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+  .nav-bar {
+    padding: 20px 20px 16px !important;
+  }
+  .hero-section {
+    padding: 32px 20px !important;
+  }
+  .hero-title {
+    font-size: 32px !important;
+    line-height: 40px !important;
+  }
+  .hero-text {
+    font-size: 15px !important;
+    line-height: 24px !important;
+  }
+  .diagram-outer {
+    margin-left: 20px !important;
+    margin-right: 20px !important;
+  }
+  .tool-square {
+    max-width: none !important;
+    height: 70px !important;
+  }
+  .tools-ref {
+    padding: 40px 20px !important;
+  }
+  .ide-setup {
+    padding: 40px 20px !important;
+  }
+  .ide-tab-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .ide-tab-bar button {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+  .tools-ref td {
+    display: block !important;
+    padding: 8px 0 !important;
+  }
+  .tools-ref tr {
+    display: block !important;
+    padding: 16px 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+  .tools-ref td:first-child {
+    border-bottom: none !important;
+  }
+  .tools-ref td:last-child {
+    border-bottom: none !important;
+  }
+  .tools-ref .code-pair {
+    flex-direction: column !important;
+  }
+}
+
+/* Small mobile (≤480px) */
+@media (max-width: 480px) {
+  .tool-square {
+    height: 60px !important;
+  }
+  .discovery-grid {
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+  .group-inner-col {
+    padding: 12px !important;
+  }
+}

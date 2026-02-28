@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Contextual MCP - Semantic codebase navigator for AI agents
 // Structural AST tree, blast radius, semantic search, commit gatekeeper
 

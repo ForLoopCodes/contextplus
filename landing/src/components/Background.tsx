@@ -34,7 +34,7 @@ export default function Background() {
           smooth={true}
         />
       </div>
-      {/* Diagonal gradient overlay: solid at top-left, transparent at bottom-right */}
+      {/* Radial gradient overlay: transparent at bottom-right, opaque elsewhere */}
       <div
         style={{
           position: "fixed",
@@ -43,7 +43,7 @@ export default function Background() {
           width: "100vw",
           height: "100vh",
           background:
-            "linear-gradient(112deg, rgba(239,239,239,1) 0%, rgba(239,239,239,1) 50%, rgba(239,239,239,0) 100%)",
+            "radial-gradient(circle at 100% 100%, rgba(239,239,239,0) 0%, rgba(239,239,239,1) 50%)",
           pointerEvents: "none",
           zIndex: 0,
         }}
