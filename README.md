@@ -8,33 +8,33 @@ Context+ is an MCP server designed for developers who demand 99% accuracy. By co
 
 ### Discovery
 
-| Tool | Description |
-| --- | --- |
-| `get_context_tree` | Structural AST tree of a project with file headers, function names, classes, and enums. Dynamic token-aware pruning shrinks output automatically. |
-| `get_file_skeleton` | Function signatures, class methods, and type definitions without reading the full body. Shows the API surface. |
-| `semantic_code_search` | Search the codebase by meaning, not exact text. Uses Ollama embeddings over file headers and symbol names. |
-| `semantic_navigate` | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters. |
+| Tool                   | Description                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_context_tree`     | Structural AST tree of a project with file headers, function names, classes, and enums. Dynamic token-aware pruning shrinks output automatically. |
+| `get_file_skeleton`    | Function signatures, class methods, and type definitions without reading the full body. Shows the API surface.                                    |
+| `semantic_code_search` | Search the codebase by meaning, not exact text. Uses Ollama embeddings over file headers and symbol names.                                        |
+| `semantic_navigate`    | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters.                                    |
 
 ### Analysis
 
-| Tool | Description |
-| --- | --- |
-| `get_blast_radius` | Trace every file and line where a symbol is imported or used. Prevents orphaned references. |
+| Tool                  | Description                                                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `get_blast_radius`    | Trace every file and line where a symbol is imported or used. Prevents orphaned references.                                   |
 | `run_static_analysis` | Run native linters and compilers to find unused variables, dead code, and type errors. Supports TypeScript, Python, Rust, Go. |
 
 ### Code Ops
 
-| Tool | Description |
-| --- | --- |
-| `propose_commit` | The only way to write code. Validates against strict rules before saving. Creates a shadow restore point before writing. |
-| `get_feature_hub` | Obsidian-style feature hub navigator. Hubs are `.md` files with `[[wikilinks]]` that map features to code files. |
+| Tool              | Description                                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `propose_commit`  | The only way to write code. Validates against strict rules before saving. Creates a shadow restore point before writing. |
+| `get_feature_hub` | Obsidian-style feature hub navigator. Hubs are `.md` files with `[[wikilinks]]` that map features to code files.         |
 
 ### Version Control
 
-| Tool | Description |
-| --- | --- |
-| `list_restore_points` | List all shadow restore points created by `propose_commit`. Each captures file state before AI changes. |
-| `undo_change` | Restore files to their state before a specific AI change. Uses shadow restore points. Does not affect git. |
+| Tool                  | Description                                                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `list_restore_points` | List all shadow restore points created by `propose_commit`. Each captures file state before AI changes.    |
+| `undo_change`         | Restore files to their state before a specific AI change. Uses shadow restore points. Does not affect git. |
 
 ## Setup
 
@@ -60,12 +60,12 @@ No installation needed. Add to your IDE's MCP config:
 
 Config file locations:
 
-| IDE | Config File |
-| --- | --- |
-| Claude Code | `.mcp.json` |
-| Cursor | `.cursor/mcp.json` |
-| VS Code | `.vscode/mcp.json` |
-| Windsurf | `.windsurf/mcp.json` |
+| IDE         | Config File          |
+| ----------- | -------------------- |
+| Claude Code | `.mcp.json`          |
+| Cursor      | `.cursor/mcp.json`   |
+| VS Code     | `.vscode/mcp.json`   |
+| Windsurf    | `.windsurf/mcp.json` |
 
 ### From Source
 
@@ -91,11 +91,11 @@ Three layers built with TypeScript over stdio using the Model Context Protocol S
 
 ## Config
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model |
-| `OLLAMA_API_KEY` | — | Cloud auth (auto-detected by SDK) |
-| `OLLAMA_CHAT_MODEL` | `llama3.2` | Chat model for cluster labeling |
+| Variable             | Default            | Description                       |
+| -------------------- | ------------------ | --------------------------------- |
+| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model                   |
+| `OLLAMA_API_KEY`     | —                  | Cloud auth (auto-detected by SDK) |
+| `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Chat model for cluster labeling   |
 
 ## Test
 
