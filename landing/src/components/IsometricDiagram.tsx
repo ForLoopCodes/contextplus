@@ -150,7 +150,7 @@ export default function IsometricDiagram() {
         position: "relative",
         zIndex: 1,
         marginTop: isMobile
-          ? -200
+          ? -50
           : isLargeMobile
             ? -100
             : isVerySmallDesktop

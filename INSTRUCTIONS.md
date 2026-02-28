@@ -44,32 +44,32 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 | `OLLAMA_API_KEY`     | (empty)            | Cloud auth (auto-detected by SDK) |
 | `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Chat model for cluster labeling   |
 
-## The 3-Step Workflow (Mandatory)
+## Fast Execute Mode (Mandatory)
 
-### Step 1: PLAN (Use native thinking)
+Default to execution-first behavior. Use minimal tokens, minimal narration, and maximum tool leverage.
 
-1. Call `get_context_tree` to map the project structure with file purposes and symbol names.
-2. If the project is large, scope it: `get_context_tree(target_path="src/auth", depth_limit=2)`.
-3. Use `get_feature_hub` to find the feature hub for the area you're working in. Read all linked files at once.
-4. Use `semantic_code_search` to find files by concept if you don't know where something lives.
-5. Use `get_file_skeleton` on relevant files to see function signatures without loading bodies.
-6. Plan exactly which files need changes and what logic goes where.
+1. Skip long planning prose. Start with lightweight scoping: `get_context_tree` and `get_file_skeleton`.
+2. Run independent discovery operations in parallel whenever possible (for example, multiple searches/reads).
+3. Prefer structural tools over full-file reads to conserve context.
+4. Before modifying or deleting symbols, run `get_blast_radius`.
+5. Write changes through `propose_commit` only.
+6. Run `run_static_analysis` once after edits, or once per changed module for larger refactors.
 
-### Step 2: WORK (Execute precisely)
+### Execution Rules
 
-1. Read only the specific files you identified in Step 1.
-2. Before modifying or deleting any function, call `get_blast_radius` to check dependencies.
-3. Write code through `propose_commit` — it validates your work before saving.
-4. If `propose_commit` rejects the code, fix the violations and resubmit.
+1. Think less, execute sooner: make the smallest safe change that can be validated quickly.
+2. Do not serialize 10 independent commands; batch parallelizable reads/searches.
+3. If a command fails, avoid blind retry loops. Diagnose once, pivot strategy, continue.
+4. Cap retry attempts for the same failing operation to 1-2 unless new evidence appears.
+5. Keep outputs concise: short status updates, no verbose reasoning dumps.
 
-### Step 3: REVIEW (Self-audit)
+### Token-Efficiency Rules
 
-1. Call `run_static_analysis` on changed files to catch unused variables and type errors.
-2. Verify the 2-line header exists on every file you created or modified.
-3. Verify line 2 includes a `FEATURE:` tag linking the file to its feature hub.
-4. Update the feature hub `.md` file with `[[path/to/new-file]]` for any new files.
-5. Run `get_feature_hub(show_orphans=true)` to ensure no orphaned files.
-6. Confirm zero inline comments exist (only the 2-line header at file top).
+1. Treat 100 effective tokens as better than 1000 vague tokens.
+2. Use high-signal tool calls first (`get_file_skeleton`, `get_context_tree`, `get_blast_radius`).
+3. Read full file bodies only when signatures/structure are insufficient.
+4. Avoid repeated scans of unchanged areas.
+5. Prefer direct edits + deterministic validation over extended speculative analysis.
 
 ## Strict Formatting Rules
 
@@ -116,18 +116,18 @@ Strict order within every file:
 
 ## Tool Reference
 
-| Tool                   | When to Use                                             |
-| ---------------------- | ------------------------------------------------------- |
-| `get_context_tree`     | Start of every task. Map the territory.                 |
-| `semantic_navigate`    | Browse codebase by meaning, not directory structure.    |
-| `get_file_skeleton`    | Before reading a full file. See signatures first.       |
-| `semantic_code_search` | Find code by concept ("auth logic", "fee calculation"). |
-| `get_blast_radius`     | Before deleting or modifying any symbol.                |
-| `run_static_analysis`  | After writing code. Catch dead code deterministically.  |
-| `propose_commit`       | The ONLY way to save files. Validates before writing.   |
-| `list_restore_points`  | See undo history.                                       |
-| `undo_change`          | Revert a bad AI change without touching git.            |
-| `get_feature_hub`      | Browse feature graph hubs. Find orphaned files.         |
+| Tool                   | When to Use                                            |
+| ---------------------- | ------------------------------------------------------ |
+| `get_context_tree`     | Start of every task. Map the territory.                |
+| `semantic_navigate`    | Browse codebase by meaning, not directory structure.   |
+| `get_file_skeleton`    | MUST run before full reads. Get signatures first.      |
+| `semantic_code_search` | Find code by concept when location is unknown.         |
+| `get_blast_radius`     | Before deleting or modifying any symbol.               |
+| `run_static_analysis`  | After writing code. Catch dead code deterministically. |
+| `propose_commit`       | The ONLY way to save files. Validates before writing.  |
+| `list_restore_points`  | See undo history.                                      |
+| `undo_change`          | Revert a bad AI change without touching git.           |
+| `get_feature_hub`      | Browse feature graph hubs. Find orphaned files.        |
 
 ## Anti-Patterns to Avoid
 
@@ -139,3 +139,11 @@ Strict order within every file:
 6. Leaving unused imports or variables after a refactor.
 7. Creating more than 10 files in a single directory.
 8. Writing files longer than 1000 lines.
+9. Running independent commands sequentially when they can be parallelized.
+10. Repeating failed terminal commands without changing inputs or approach.
+
+## Priority Reminder
+
+Execute ASAP with the least tokens possible.
+Use structural/context tools strategically, then patch and validate.
+Avoid over-planning unless the task is ambiguous or high-risk.
