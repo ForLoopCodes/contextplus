@@ -1,6 +1,42 @@
+# Dependencies
 node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
 build/
-.mcp_data/
+.next/
+.open-next/
+dist/
+
+# Generated files
 *.js.map
 *.d.ts
-.env*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Development
+.mcp_data/
+.turbo/
+.wrangler/
+npm-debug.log
+yarn-error.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Cache
+.eslintcache
+*.tsbuildinfo
