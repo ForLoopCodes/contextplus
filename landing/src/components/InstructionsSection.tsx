@@ -161,94 +161,148 @@ export default function InstructionsSection() {
         zIndex: 1,
         padding: "0px 100px 40px",
         width: "100%",
-        maxWidth: 1200,
-        marginLeft: "auto",
+        display: "flex",
+        minHeight: "100vh",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <p
-        style={{
-          fontSize: 18,
-          fontWeight: 300,
-          lineHeight: "28px",
-          fontFamily: "var(--font-geist-pixel-square)",
-          letterSpacing: "-0.02em",
-          background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text" as const,
-          maxWidth: 630,
-          marginLeft: "auto",
-          textAlign: "right" as const,
-          marginBottom: 40,
-        }}
-      >
-        Copy the instruction file into your project root to teach your agent the
-        3-step workflow, strict formatting rules, and anti-patterns that make
-        Contextual effective. It enforces file headers
-        and clean abstraction.
-      </p>
-
       <div
+        className="instr-inner-row"
         style={{
-          background: "rgba(0,0,0,0.04)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          borderRadius: 14,
-          overflow: "hidden",
+          display: "flex",
+          gap: 40,
+          alignItems: "stretch",
+          width: "100%",
         }}
       >
+        {/* Diagonal line decoration — left side */}
         <div
+          className="instr-dashed-square"
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "10px 24px 0",
+            flex: 1,
+            pointerEvents: "none",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            borderRadius: 20,
+            overflow: "hidden",
           }}
         >
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 300,
-              color: "#888",
-              fontFamily: "var(--font-geist-mono)",
-            }}
-          >
-            INSTRUCTIONS.md
-          </span>
-          <button
-            onClick={handleCopy}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px 8px",
-              fontSize: 13,
-              fontWeight: 300,
-              color: copied ? "#000" : "#888",
-              fontFamily: "var(--font-geist-mono)",
-              transition: "color 0.15s",
-            }}
-          >
-            {copied ? "copied" : "copy"}
-          </button>
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern
+                id="instr-diag-lines"
+                width="6"
+                height="6"
+                patternUnits="userSpaceOnUse"
+                patternTransform="rotate(45)"
+              >
+                <line
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="6"
+                  stroke="#888888"
+                  strokeWidth="1.5"
+                />
+              </pattern>
+            </defs>
+            <rect
+              x="0"
+              y="0"
+              width="100%"
+              height="100%"
+              fill="url(#instr-diag-lines)"
+            />
+          </svg>
         </div>
-        <pre
-          style={{
-            fontFamily: "var(--font-geist-mono)",
-            fontSize: 13,
-            fontWeight: 300,
-            lineHeight: "20px",
-            color: "#333",
-            padding: "12px 24px 20px",
-            overflow: "auto",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            margin: 0,
-            maxHeight: 400,
-          }}
-        >
-          {INSTRUCTIONS}
-        </pre>
+        <div style={{ maxWidth: 1200, flex: "0 1 1200px" }}>
+          <p
+            style={{
+              fontSize: 18,
+              fontWeight: 300,
+              lineHeight: "28px",
+              fontFamily: "var(--font-geist-pixel-square)",
+              letterSpacing: "-0.02em",
+              background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text" as const,
+              maxWidth: 630,
+              marginLeft: "auto",
+              textAlign: "right" as const,
+              marginBottom: 40,
+            }}
+          >
+            Copy the instruction file into your project root to teach your agent
+            the 3-step workflow, strict formatting rules, and anti-patterns that
+            make Contextual effective. It enforces file headers and clean
+            abstraction.
+          </p>
+
+          <div
+            style={{
+              background: "rgba(0,0,0,0.04)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              borderRadius: 14,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "10px 24px 0",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 300,
+                  color: "#888",
+                  fontFamily: "var(--font-geist-mono)",
+                }}
+              >
+                INSTRUCTIONS.md
+              </span>
+              <button
+                onClick={handleCopy}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  fontSize: 13,
+                  fontWeight: 300,
+                  color: copied ? "#000" : "#888",
+                  fontFamily: "var(--font-geist-mono)",
+                  transition: "color 0.15s",
+                }}
+              >
+                {copied ? "copied" : "copy"}
+              </button>
+            </div>
+            <pre
+              style={{
+                fontFamily: "var(--font-geist-mono)",
+                fontSize: 13,
+                fontWeight: 300,
+                lineHeight: "20px",
+                color: "#333",
+                padding: "12px 24px 20px",
+                overflow: "auto",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                margin: 0,
+                maxHeight: 400,
+              }}
+            >
+              {INSTRUCTIONS}
+            </pre>
+          </div>
+        </div>
       </div>
     </section>
   );

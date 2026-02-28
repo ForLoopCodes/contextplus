@@ -129,7 +129,11 @@ export default async function Home() {
           position: "relative",
           zIndex: 1,
           width: "fit-content",
-          marginLeft: 100,
+          margin: "0 auto",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
         }}
       >
         {/* Dashed line with centered title */}
@@ -865,6 +869,120 @@ export default async function Home() {
           </tbody>
         </table>
       </section>
+
+      {/* Quote Section */}
+      <section
+        className="quote-section"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "80px 100px",
+          textShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-geist-sans)",
+            fontSize: 48,
+            fontWeight: 300,
+            lineHeight: "68px",
+            letterSpacing: "-0.05em",
+            textAlign: "center",
+            maxWidth: 900,
+            background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text" as const,
+          }}
+        >
+          &ldquo;Context engineering is the delicate art and science of filling
+          the context window with just the right information for the next
+          step.&rdquo;
+        </p>
+        <a
+          href="https://x.com/karpathy/status/1937902205765607626"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            marginTop: 24,
+            fontSize: 16,
+            fontWeight: 300,
+            color: "#666",
+            textDecoration: "none",
+            fontFamily: "var(--font-geist-pixel-square)",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          - Andrej Karpathy
+        </a>
+      </section>
+
+      {/* Footer */}
+      <footer
+        className="site-footer"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "80px 100px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderTop: "1.5px solid rgba(0,0,0,0.08)",
+          background: "rgba(239,239,239,0.6)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
+        <span
+          className="font-light text-black"
+          style={{ fontSize: 22, lineHeight: "28px" }}
+        >
+          Contextual
+        </span>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <a
+            href="https://www.npmjs.com/package/contextual"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center"
+          >
+            <svg width="20" height="20" viewBox="0 0 256 256" fill="#1E1E1E">
+              <path d="M0 256V0h256v256H0zm41-41h57.5V71.2H141V215h34V41H41v174z" />
+            </svg>
+          </a>
+          <a
+            href="https://github.com/ForLoopCodes/contextual"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center"
+            style={{ gap: 8 }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1E1E1E"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+            </svg>
+            <span
+              className="font-light text-black"
+              style={{ fontSize: 18, lineHeight: "24px" }}
+            >
+              {stars}
+            </span>
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

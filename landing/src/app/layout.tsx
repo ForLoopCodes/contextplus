@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { GeistPixelSquare } from "geist/font/pixel";
+import { GeistPixelSquare, GeistPixelLine } from "geist/font/pixel";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Contextual — Semantic Intelligence for Large-Scale Engineering",
+  title: "Contextual Semantic Intelligence for Large-Scale Engineering",
   description:
     "MCP server designed for developers who demand 99% accuracy. Tree-sitter AST parsing, Spectral Clustering, and Obsidian-style linking.",
 };
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable} ${GeistPixelSquare.className}`}
+        className={`${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable} ${GeistPixelLine.variable} ${GeistPixelSquare.className}`}
       >
         {children}
       </body>
