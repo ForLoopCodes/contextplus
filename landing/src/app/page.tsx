@@ -69,7 +69,7 @@ const toolRefRows = [
   },
   {
     name: "semantic_identifier_search",
-    desc: "Find closest functions/classes/variables by meaning, then return ranked definition and call-chain locations with line numbers.",
+    desc: "Find closest functions/classes/variables by meaning, then return ranked definition and call-chain locations with line numbers. Uses realtime-refreshed identifier embeddings.",
     input:
       "{\n  query: string,\n  top_k?: number,\n  top_calls_per_identifier?: number,\n  include_kinds?: string[]\n}",
     output:
@@ -236,7 +236,8 @@ export default async function Home() {
             accuracy. By combining Tree-sitter AST parsing, Spectral Clustering,
             and Obsidian-style linking, Context+ turns a massive codebase into a
             searchable, hierarchical feature graph with line-numbered symbol and
-            call-chain intelligence.
+            call-chain intelligence, GPU-safe embedding batches, and realtime
+            incremental embedding refresh.
           </p>
         </section>
       </div>

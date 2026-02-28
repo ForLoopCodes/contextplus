@@ -7,6 +7,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { mkdir, writeFile } from "fs/promises";
 import { dirname, resolve } from "path";
 import { z } from "zod";
+import { startEmbeddingTracker } from "./core/embedding-tracker.js";
 import { getContextTree } from "./tools/context-tree.js";
 import { getFileSkeleton } from "./tools/file-skeleton.js";
 import { ensureMcpDataDir } from "./core/embeddings.js";
@@ -73,6 +74,8 @@ function buildMcpConfig(runner: "npx" | "bunx") {
             OLLAMA_EMBED_MODEL: "nomic-embed-text",
             OLLAMA_CHAT_MODEL: "gemma2:27b",
             OLLAMA_API_KEY: "YOUR_OLLAMA_API_KEY",
+            CONTEXTPLUS_EMBED_BATCH_SIZE: "8",
+            CONTEXTPLUS_EMBED_TRACKER: "true",
           },
         },
       },
@@ -349,6 +352,19 @@ async function main() {
     return;
   }
   await ensureMcpDataDir(ROOT_DIR);
+  const trackerEnabled = (process.env.CONTEXTPLUS_EMBED_TRACKER ?? "true").toLowerCase() !== "false";
+  const stopTracker = trackerEnabled
+    ? startEmbeddingTracker({
+      rootDir: ROOT_DIR,
+      debounceMs: Number.parseInt(process.env.CONTEXTPLUS_EMBED_TRACKER_DEBOUNCE_MS ?? "700", 10),
+      maxFilesPerTick: Number.parseInt(process.env.CONTEXTPLUS_EMBED_TRACKER_MAX_FILES ?? "8", 10),
+    })
+    : () => { };
+
+  process.once("SIGINT", () => stopTracker());
+  process.once("SIGTERM", () => stopTracker());
+  process.once("exit", () => stopTracker());
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(`Context+ MCP server running on stdio | root: ${ROOT_DIR}`);

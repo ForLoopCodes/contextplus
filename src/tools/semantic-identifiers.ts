@@ -6,10 +6,12 @@ import { walkDirectory } from "../core/walker.js";
 import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js";
 import {
   fetchEmbedding,
+  getEmbeddingBatchSize,
   loadEmbeddingCache,
   saveEmbeddingCache,
   type EmbeddingCache,
 } from "../core/embeddings.js";
+import { resolve } from "path";
 
 export interface SemanticIdentifierSearchOptions {
   rootDir: string;
@@ -136,6 +138,45 @@ function normalizeKinds(kinds?: string[]): Set<string> | null {
   return normalized.length > 0 ? new Set(normalized) : null;
 }
 
+function normalizeRelativePath(path: string): string {
+  return path.replace(/\\/g, "/");
+}
+
+function removeFileScopedCacheEntries(cache: EmbeddingCache, relativePath: string): void {
+  const definitionPrefix = `id:${relativePath}:`;
+  const callsitePrefix = `${CALLSITE_CACHE_PREFIX}${relativePath}:`;
+  for (const key of Object.keys(cache)) {
+    if (key.startsWith(definitionPrefix) || key.startsWith(callsitePrefix)) {
+      delete cache[key];
+    }
+  }
+}
+
+async function buildIdentifierDocsForFile(rootDir: string, relativePath: string): Promise<IdentifierDoc[]> {
+  const normalized = normalizeRelativePath(relativePath);
+  const fullPath = resolve(rootDir, normalized);
+  if (!isSupportedFile(fullPath)) return [];
+
+  try {
+    const analysis = await analyzeFile(fullPath);
+    const flat = flattenSymbols(analysis.symbols);
+    return flat.map((symbol) => ({
+      id: `${normalized}:${symbol.name}:${symbol.line}`,
+      path: normalized,
+      header: analysis.header,
+      name: symbol.name,
+      kind: symbol.kind,
+      line: symbol.line,
+      endLine: symbol.endLine,
+      signature: symbol.signature,
+      parentName: symbol.parentName,
+      text: `${symbol.name} ${symbol.kind} ${symbol.signature} ${normalized} ${analysis.header} ${symbol.parentName ?? ""}`,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function buildIdentifierIndex(rootDir: string): Promise<IdentifierIndex> {
   if (cachedIndex && cachedRootDir === rootDir && Date.now() - cachedAt < INDEX_TTL_MS) {
     return cachedIndex;
@@ -194,7 +235,7 @@ async function buildIdentifierIndex(rootDir: string): Promise<IdentifierIndex> {
   }
 
   if (uncached.length > 0) {
-    const batchSize = 32;
+    const batchSize = getEmbeddingBatchSize();
     for (let i = 0; i < uncached.length; i += batchSize) {
       const batch = uncached.slice(i, i + batchSize);
       const embeddings = await fetchEmbedding(batch.map((entry) => entry.text));
@@ -273,7 +314,7 @@ async function rankCallSites(
   }
 
   if (uncached.length > 0) {
-    const batchSize = 32;
+    const batchSize = getEmbeddingBatchSize();
     for (let i = 0; i < uncached.length; i += batchSize) {
       const batch = uncached.slice(i, i + batchSize);
       const embeddings = await fetchEmbedding(batch.map((item) => item.text));
@@ -385,4 +426,37 @@ export function invalidateIdentifierSearchCache(): void {
   cachedRootDir = null;
   cachedAt = 0;
   cachedIndex = null;
+}
+
+export async function refreshIdentifierEmbeddings(options: { rootDir: string; relativePaths: string[] }): Promise<number> {
+  const uniquePaths = Array.from(new Set(options.relativePaths.map(normalizeRelativePath).filter(Boolean)));
+  if (uniquePaths.length === 0) return 0;
+
+  const cache = await loadEmbeddingCache(options.rootDir, IDENTIFIER_CACHE_FILE);
+  const pending: { key: string; hash: string; text: string }[] = [];
+
+  for (const relativePath of uniquePaths) {
+    removeFileScopedCacheEntries(cache, relativePath);
+    const docs = await buildIdentifierDocsForFile(options.rootDir, relativePath);
+    for (const doc of docs) {
+      const key = `id:${doc.id}`;
+      const hash = hashContent(doc.text);
+      pending.push({ key, hash, text: doc.text });
+    }
+  }
+
+  if (pending.length > 0) {
+    const batchSize = getEmbeddingBatchSize();
+    for (let i = 0; i < pending.length; i += batchSize) {
+      const batch = pending.slice(i, i + batchSize);
+      const vectors = await fetchEmbedding(batch.map((entry) => entry.text));
+      for (let j = 0; j < batch.length; j++) {
+        cache[batch[j].key] = { hash: batch[j].hash, vector: vectors[j] };
+      }
+    }
+  }
+
+  await saveEmbeddingCache(options.rootDir, cache, IDENTIFIER_CACHE_FILE);
+  invalidateIdentifierSearchCache();
+  return pending.length;
 }

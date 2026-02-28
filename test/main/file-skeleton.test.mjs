@@ -40,6 +40,18 @@ describe("file-skeleton", async () => {
       assert.ok(result.includes("lines"));
     });
 
+    it("includes line metadata for symbols", async () => {
+      await writeFile(
+        join(FIXTURE_DIR, "lines.ts"),
+        "// H1\n// H2\n\nfunction alpha() {\n  return 1;\n}\n",
+      );
+      const result = await getFileSkeleton({
+        rootDir: FIXTURE_DIR,
+        filePath: "lines.ts",
+      });
+      assert.ok(result.includes("L"));
+    });
+
     it("includes symbol count", async () => {
       await writeFile(
         join(FIXTURE_DIR, "multi.ts"),

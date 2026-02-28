@@ -4,6 +4,7 @@
 import { Ollama } from "ollama";
 import { walkDirectory } from "../core/walker.js";
 import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js";
+import { fetchEmbedding } from "../core/embeddings.js";
 import { readFile } from "fs/promises";
 import { spectralCluster, findPathPattern } from "../core/clustering.js";
 
@@ -34,14 +35,7 @@ const MAX_FILES_PER_LEAF = 20;
 const ollama = new Ollama();
 
 async function fetchEmbeddings(inputs: string[]): Promise<number[][]> {
-  const results: number[][] = [];
-  const batchSize = 32;
-  for (let i = 0; i < inputs.length; i += batchSize) {
-    const batch = inputs.slice(i, i + batchSize);
-    const response = await ollama.embed({ model: EMBED_MODEL, input: batch });
-    results.push(...response.embeddings);
-  }
-  return results;
+  return fetchEmbedding(inputs);
 }
 
 async function chatCompletion(prompt: string): Promise<string> {

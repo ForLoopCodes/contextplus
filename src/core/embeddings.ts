@@ -60,13 +60,37 @@ export interface EmbeddingCache {
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const CACHE_DIR = ".mcp_data";
 const CACHE_FILE = "embeddings-cache.json";
+const MIN_EMBED_BATCH_SIZE = 5;
+const MAX_EMBED_BATCH_SIZE = 10;
+const DEFAULT_EMBED_BATCH_SIZE = 8;
 
 const ollama = new Ollama();
 
+function toIntegerOr(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+export function getEmbeddingBatchSize(): number {
+  const requested = toIntegerOr(process.env.CONTEXTPLUS_EMBED_BATCH_SIZE, DEFAULT_EMBED_BATCH_SIZE);
+  return Math.min(MAX_EMBED_BATCH_SIZE, Math.max(MIN_EMBED_BATCH_SIZE, requested));
+}
+
 export async function fetchEmbedding(input: string | string[]): Promise<number[][]> {
   const inputs = Array.isArray(input) ? input : [input];
-  const response = await ollama.embed({ model: EMBED_MODEL, input: inputs });
-  return response.embeddings;
+  if (inputs.length === 0) return [];
+
+  const batchSize = getEmbeddingBatchSize();
+  const embeddings: number[][] = [];
+
+  for (let i = 0; i < inputs.length; i += batchSize) {
+    const batch = inputs.slice(i, i + batchSize);
+    const response = await ollama.embed({ model: EMBED_MODEL, input: batch });
+    embeddings.push(...response.embeddings);
+  }
+
+  return embeddings;
 }
 
 function hashContent(text: string): string {
@@ -222,7 +246,7 @@ export class SearchIndex {
     }
 
     if (uncached.length > 0) {
-      const batchSize = 32;
+      const batchSize = getEmbeddingBatchSize();
       for (let b = 0; b < uncached.length; b += batchSize) {
         const batch = uncached.slice(b, b + batchSize);
         const embeddings = await fetchEmbedding(batch.map((u) => u.text));

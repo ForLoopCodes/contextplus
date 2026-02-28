@@ -128,15 +128,19 @@ Three layers built with TypeScript over stdio using the Model Context Protocol S
 
 **Git** (`src/git/`) — Shadow restore point system for undo without touching git history.
 
-**Runtime Cache** (`.mcp_data/`) — created on server startup; stores reusable file, identifier, and call-site embeddings to avoid repeated GPU/CPU embedding work.
+**Runtime Cache** (`.mcp_data/`) — created on server startup; stores reusable file, identifier, and call-site embeddings to avoid repeated GPU/CPU embedding work. A realtime tracker refreshes changed files/functions incrementally.
 
 ## Config
 
-| Variable             | Default            | Description                     |
-| -------------------- | ------------------ | ------------------------------- |
-| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model                 |
-| `OLLAMA_API_KEY`     | —                  | Ollama Cloud API key            |
-| `OLLAMA_CHAT_MODEL`  | `llama3.2`         | Chat model for cluster labeling |
+| Variable                                | Default            | Description                                                   |
+| --------------------------------------- | ------------------ | ------------------------------------------------------------- |
+| `OLLAMA_EMBED_MODEL`                    | `nomic-embed-text` | Embedding model                                               |
+| `OLLAMA_API_KEY`                        | —                  | Ollama Cloud API key                                          |
+| `OLLAMA_CHAT_MODEL`                     | `llama3.2`         | Chat model for cluster labeling                               |
+| `CONTEXTPLUS_EMBED_BATCH_SIZE`          | `8`                | Embedding batch size per GPU call, clamped to 5-10            |
+| `CONTEXTPLUS_EMBED_TRACKER`             | `true`             | Enable realtime embedding refresh on file changes             |
+| `CONTEXTPLUS_EMBED_TRACKER_MAX_FILES`   | `8`                | Max changed files processed per tracker tick, clamped to 5-10 |
+| `CONTEXTPLUS_EMBED_TRACKER_DEBOUNCE_MS` | `700`              | Debounce window before tracker refresh                        |
 
 ## Test
 

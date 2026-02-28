@@ -72,6 +72,15 @@ describe("context-tree", async () => {
       );
     });
 
+    it("includes line metadata with symbols", async () => {
+      const result = await getContextTree({
+        rootDir: FIXTURE_DIR,
+        includeSymbols: true,
+        maxTokens: 50000,
+      });
+      assert.ok(result.includes("L"));
+    });
+
     it("respects depth limit", async () => {
       const result = await getContextTree({
         rootDir: FIXTURE_DIR,

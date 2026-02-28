@@ -48,6 +48,12 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 | \`OLLAMA_EMBED_MODEL\` | \`nomic-embed-text\` | Embedding model name              |
 | \`OLLAMA_API_KEY\`     | (empty)            | Cloud auth (auto-detected by SDK) |
 | \`OLLAMA_CHAT_MODEL\`  | \`llama3.2\`         | Chat model for cluster labeling   |
+| \`CONTEXTPLUS_EMBED_BATCH_SIZE\` | \`8\` | Embedding batch per GPU call (hard-capped to 5-10) |
+| \`CONTEXTPLUS_EMBED_TRACKER\` | \`true\` | Enable realtime embedding updates for changed files/functions |
+| \`CONTEXTPLUS_EMBED_TRACKER_MAX_FILES\` | \`8\` | Max changed files per tracker tick (hard-capped to 5-10) |
+| \`CONTEXTPLUS_EMBED_TRACKER_DEBOUNCE_MS\` | \`700\` | Debounce before applying tracker refresh |
+
+Runtime cache: \`.mcp_data/\` is created at MCP startup and stores reusable embedding vectors for files, identifiers, and call sites. A realtime tracker watches file updates and refreshes changed function/file embeddings incrementally.
 
 ## Fast Execute Mode (Mandatory)
 

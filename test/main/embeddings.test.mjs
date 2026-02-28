@@ -1,8 +1,18 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { SearchIndex } from "../../build/core/embeddings.js";
+import {
+  SearchIndex,
+  getEmbeddingBatchSize,
+} from "../../build/core/embeddings.js";
 
 describe("embeddings", () => {
+  describe("getEmbeddingBatchSize", () => {
+    it("returns a GPU-safe value between 5 and 10", () => {
+      const value = getEmbeddingBatchSize();
+      assert.ok(value >= 5 && value <= 10);
+    });
+  });
+
   describe("SearchIndex", () => {
     it("creates an instance", () => {
       const index = new SearchIndex();
