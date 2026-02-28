@@ -15,7 +15,8 @@ const runners = [
 ];
 
 function buildConfig(runner: string): string {
-  const commandArgs = runner === "npx" ? ["-y", "contextplus"] : ["contextplus"];
+  const commandArgs =
+    runner === "npx" ? ["-y", "contextplus"] : ["contextplus"];
   return JSON.stringify(
     {
       mcpServers: {
