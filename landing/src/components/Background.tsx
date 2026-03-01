@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const LetterGlitch = dynamic(() => import("./LetterGlitch"), { ssr: false });
 
@@ -27,7 +27,6 @@ export default function Background() {
 
   return (
     <>
-      {/* Base background layer */}
       <div
         style={{
           position: "fixed",
@@ -40,7 +39,6 @@ export default function Background() {
           background: isDark ? "#0a0a0a" : "#efefef",
         }}
       />
-      {/* Matrix characters layer */}
       <div
         style={{
           position: "fixed",
@@ -57,7 +55,14 @@ export default function Background() {
           glitchColors={
             isDark
               ? ["#ffffff", "#f0f0f0", "#e0e0e0", "#d0d0d0"]
-              : ["#000000", "#333333", "#666666", "#999999", "#CCCCCC", "#EFEFEF"]
+              : [
+                  "#000000",
+                  "#333333",
+                  "#666666",
+                  "#999999",
+                  "#CCCCCC",
+                  "#EFEFEF",
+                ]
           }
           glitchSpeed={50}
           centerVignette={false}
@@ -65,7 +70,6 @@ export default function Background() {
           smooth={true}
         />
       </div>
-      {/* Vignette overlay for text readability */}
       <div
         style={{
           position: "fixed",

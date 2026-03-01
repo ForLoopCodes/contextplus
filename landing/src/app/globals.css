@@ -6,14 +6,28 @@
   --bg-tertiary: #f5f5f5;
   --text-primary: #000000;
   --text-secondary: #666666;
+  --text-body: #333333;
+  --text-code: #444444;
+  --text-faint: #888888;
+  --text-punct: #999999;
+  --json-key: #111111;
+  --json-string: #555555;
+  --json-value: #333333;
+  --json-punct: #999999;
+  --gradient-end: #666666;
   --text-muted: rgba(0, 0, 0, 0.5);
   --border-color: rgba(0, 0, 0, 0.1);
+  --footer-border: rgba(0, 0, 0, 0.08);
   --nav-bg: rgba(239, 239, 239, 0.6);
   --toggle-bg: rgba(255, 255, 255, 0.8);
+  --panel-bg: rgba(239, 239, 239, 0.45);
+  --panel-border: rgba(0, 0, 0, 0.15);
+  --surface-soft: rgba(0, 0, 0, 0.04);
   --shadow-color: rgba(0, 0, 0, 0.07);
+  --quote-shadow: rgba(0, 0, 0, 0.1);
   --scrollbar-thumb: rgba(0, 0, 0, 0.12);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
-  --code-bg: #f8f8f8;
+  --code-bg: rgba(0, 0, 0, 0.04);
   --code-border: rgba(0, 0, 0, 0.08);
   --table-border: rgba(0, 0, 0, 0.06);
   --icon-color: #1e1e1e;
@@ -25,14 +39,28 @@
   --bg-tertiary: #1a1a1a;
   --text-primary: #f0f0f0;
   --text-secondary: #a0a0a0;
+  --text-body: #c9c9c9;
+  --text-code: #b8b8b8;
+  --text-faint: #9a9a9a;
+  --text-punct: #8a8a8a;
+  --json-key: #f0f0f0;
+  --json-string: #cccccc;
+  --json-value: #c0c0c0;
+  --json-punct: #9a9a9a;
+  --gradient-end: #a0a0a0;
   --text-muted: rgba(255, 255, 255, 0.5);
   --border-color: rgba(255, 255, 255, 0.1);
+  --footer-border: rgba(255, 255, 255, 0.08);
   --nav-bg: rgba(10, 10, 10, 0.6);
   --toggle-bg: rgba(30, 30, 30, 0.8);
+  --panel-bg: rgba(10, 10, 10, 0.45);
+  --panel-border: rgba(255, 255, 255, 0.15);
+  --surface-soft: rgba(255, 255, 255, 0.08);
   --shadow-color: rgba(0, 0, 0, 0.3);
+  --quote-shadow: rgba(0, 0, 0, 0.4);
   --scrollbar-thumb: rgba(255, 255, 255, 0.12);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
-  --code-bg: #1a1a1a;
+  --code-bg: rgba(255, 255, 255, 0.08);
   --code-border: rgba(255, 255, 255, 0.08);
   --table-border: rgba(255, 255, 255, 0.06);
   --icon-color: #e0e0e0;
@@ -49,7 +77,9 @@ body {
   color: var(--text-primary);
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
 }
 
 h1,
@@ -191,7 +221,7 @@ label,
     width: 100% !important;
   }
 
-  .diagram-groups>div {
+  .diagram-groups > div {
     width: 100% !important;
   }
 
@@ -201,7 +231,7 @@ label,
     width: 100% !important;
   }
 
-  .group-inner-col>div {
+  .group-inner-col > div {
     flex: 1 1 0 !important;
     min-width: 0 !important;
   }

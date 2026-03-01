@@ -104,7 +104,7 @@ describe("PROOF: Real Ollama Embeddings", () => {
       console.log("  (Higher cosine = more semantically similar)");
       console.log("=== PROOF COMPLETE ===\n");
     } catch (err) {
-      console.log("\n  ⚠ Ollama not available — skipping live embedding test.");
+      console.log("\n  ⚠ Ollama not available - skipping live embedding test.");
       console.log(`  Error: ${err.message}`);
       console.log("  Ensure Ollama is running: ollama serve");
       console.log(
@@ -158,7 +158,7 @@ describe("PROOF: Real Ollama Embeddings", () => {
         const results = await index.search(query, 3);
         results.forEach((r, i) => {
           console.log(
-            `  [${i + 1}] ${r.path} (score: ${r.score.toFixed(4)}) — ${r.header.slice(0, 60)}`,
+            `  [${i + 1}] ${r.path} (score: ${r.score.toFixed(4)}) - ${r.header.slice(0, 60)}`,
           );
         });
         console.log("");
@@ -166,7 +166,7 @@ describe("PROOF: Real Ollama Embeddings", () => {
 
       console.log("=== SEARCH PROOF COMPLETE ===\n");
     } catch (err) {
-      console.log("\n  ⚠ Ollama not available — skipping SearchIndex test.");
+      console.log("\n  ⚠ Ollama not available - skipping SearchIndex test.");
       console.log(`  Error: ${err.message}`);
       console.log("  Ensure Ollama is running: ollama serve\n");
     }

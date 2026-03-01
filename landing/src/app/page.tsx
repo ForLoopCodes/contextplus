@@ -14,7 +14,7 @@ const toolRefRows = [
     input:
       "{\n  target_path?: string,\n  depth_limit?: number,\n  include_symbols?: boolean,\n  max_tokens?: number\n}",
     output:
-      '"src/\n  index.ts — Entry point\n    function: getStars() (L170-L181)\n    function: Home() (L183-L760)\n  utils/\n    parser.ts — AST parsing\n      function: parseFile() (L22-L84)\n      function: walkTree() (L86-L132)"',
+      '"src/\n  index.ts - Entry point\n    function: getStars() (L170-L181)\n    function: Home() (L183-L760)\n  utils/\n    parser.ts - AST parsing\n      function: parseFile() (L22-L84)\n      function: walkTree() (L86-L132)"',
   },
   {
     name: "get_file_skeleton",
@@ -36,14 +36,14 @@ const toolRefRows = [
     input:
       "{\n  query: string,\n  top_k?: number,\n  top_calls_per_identifier?: number,\n  include_kinds?: string[]\n}",
     output:
-      '"1. function verifyToken — src/auth/jwt.ts (L20-L58)\n   Score: 92.4%\n   Calls (3/3):\n     1. src/middleware/guard.ts:L33 (88.1%) verifyToken(token)\n     2. src/routes/api.ts:L12 (84.7%) const user = verifyToken(raw)\n2. variable tokenExpiry — src/auth/config.ts (L8)"',
+      '"1. function verifyToken - src/auth/jwt.ts (L20-L58)\n   Score: 92.4%\n   Calls (3/3):\n     1. src/middleware/guard.ts:L33 (88.1%) verifyToken(token)\n     2. src/routes/api.ts:L12 (84.7%) const user = verifyToken(raw)\n2. variable tokenExpiry - src/auth/config.ts (L8)"',
   },
   {
     name: "get_blast_radius",
     desc: "Before modifying code, trace every file and line where a symbol is imported or used. Prevents orphaned references.",
     input: "{\n  symbol_name: string,\n  file_context?: string\n}",
     output:
-      '"parseFile — 7 usages\n  src/index.ts:14  import { parseFile }\n  src/tools/tree.ts:8  const ast = parseFile(p)\n  src/tools/skeleton.ts:22  parseFile(path)\n  test/parser.test.ts:5  import { parseFile }"',
+      '"parseFile - 7 usages\n  src/index.ts:14  import { parseFile }\n  src/tools/tree.ts:8  const ast = parseFile(p)\n  src/tools/skeleton.ts:22  parseFile(path)\n  test/parser.test.ts:5  import { parseFile }"',
   },
   {
     name: "run_static_analysis",
@@ -140,7 +140,9 @@ export default async function Home() {
           >
             Semantic Intelligence for
             <br />
-            <span style={{ color: "var(--text-primary)" }}>Large-Scale Engineering.</span>
+            <span style={{ color: "var(--text-primary)" }}>
+              Large-Scale Engineering.
+            </span>
           </h1>
           <p
             className="hero-text font-light"
@@ -148,15 +150,17 @@ export default async function Home() {
               fontSize: 18,
               lineHeight: "28px",
               letterSpacing: "-0.02em",
-              background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
+              background:
+                "linear-gradient(180deg, var(--text-primary) 0%, var(--gradient-end) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
             }}
           >
             Context+ is an MCP server designed for developers who demand 99%
-            accuracy. By combining Tree-sitter AST parsing & Spectral Clustering, Context+ turns a massive codebase into a
-            searchable, hierarchical graph.
+            accuracy. By combining Tree-sitter AST parsing & Spectral
+            Clustering, Context+ turns a massive codebase into a searchable,
+            hierarchical graph.
           </p>
         </section>
       </div>
@@ -202,7 +206,8 @@ export default async function Home() {
             lineHeight: "28px",
             fontFamily: "var(--font-geist-pixel-square)",
             letterSpacing: "-0.02em",
-            background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
+            background:
+              "linear-gradient(180deg, var(--text-primary) 0%, var(--gradient-end) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text" as const,
@@ -258,7 +263,7 @@ export default async function Home() {
                       fontSize: 14,
                       fontWeight: 300,
                       lineHeight: "22px",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-body)",
                       marginBottom: 16,
                       fontFamily: "var(--font-geist-sans)",
                     }}
@@ -276,7 +281,7 @@ export default async function Home() {
                         fontSize: 12,
                         fontWeight: 300,
                         lineHeight: "18px",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-code)",
                         background: "var(--code-bg)",
                         backdropFilter: "blur(8px)",
                         WebkitBackdropFilter: "blur(8px)",
@@ -292,7 +297,7 @@ export default async function Home() {
                         style={{
                           fontSize: 10,
                           fontWeight: 500,
-                          color: "var(--text-secondary)",
+                          color: "var(--text-faint)",
                           display: "block",
                           marginBottom: 6,
                           fontFamily: "var(--font-geist-mono)",
@@ -309,7 +314,7 @@ export default async function Home() {
                         fontSize: 12,
                         fontWeight: 300,
                         lineHeight: "18px",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-code)",
                         background: "var(--code-bg)",
                         backdropFilter: "blur(8px)",
                         WebkitBackdropFilter: "blur(8px)",
@@ -325,7 +330,7 @@ export default async function Home() {
                         style={{
                           fontSize: 10,
                           fontWeight: 500,
-                          color: "var(--text-secondary)",
+                          color: "var(--text-faint)",
                           display: "block",
                           marginBottom: 6,
                           fontFamily: "var(--font-geist-mono)",
@@ -354,7 +359,7 @@ export default async function Home() {
           alignItems: "center",
           justifyContent: "center",
           padding: "80px 100px",
-          textShadow: "0 4px 12px var(--shadow-color)",
+          textShadow: "0 4px 12px var(--quote-shadow)",
         }}
       >
         <p
@@ -366,7 +371,8 @@ export default async function Home() {
             letterSpacing: "-0.05em",
             textAlign: "center",
             maxWidth: 900,
-            background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
+            background:
+              "linear-gradient(180deg, var(--text-primary) 0%, var(--gradient-end) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text" as const,
@@ -403,7 +409,7 @@ export default async function Home() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderTop: "1.5px solid var(--border-color)",
+          borderTop: "1.5px solid var(--footer-border)",
           background: "var(--nav-bg)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
@@ -411,7 +417,11 @@ export default async function Home() {
       >
         <span
           className="font-light"
-          style={{ fontSize: 22, lineHeight: "28px", color: "var(--text-primary)" }}
+          style={{
+            fontSize: 22,
+            lineHeight: "28px",
+            color: "var(--text-primary)",
+          }}
         >
           Context+
         </span>
@@ -422,7 +432,12 @@ export default async function Home() {
             rel="noopener noreferrer"
             className="flex items-center"
           >
-            <svg width="20" height="20" viewBox="0 0 256 256" fill="var(--icon-color)">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 256 256"
+              fill="var(--icon-color)"
+            >
               <path d="M0 256V0h256v256H0zm41-41h57.5V71.2H141V215h34V41H41v174z" />
             </svg>
           </a>
@@ -447,7 +462,11 @@ export default async function Home() {
             </svg>
             <span
               className="font-light"
-              style={{ fontSize: 18, lineHeight: "24px", color: "var(--text-primary)" }}
+              style={{
+                fontSize: 18,
+                lineHeight: "24px",
+                color: "var(--text-primary)",
+              }}
             >
               {stars}
             </span>

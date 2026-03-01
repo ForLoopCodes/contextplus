@@ -111,7 +111,7 @@ export async function getFeatureHub(options: FeatureHubOptions): Promise<string>
     const ext = extname(filePath);
     const desc = hub.links.find((l) => l.target === filePath)?.description;
 
-    if (desc) out.push(`## ${filePath} — ${desc}`);
+    if (desc) out.push(`## ${filePath} - ${desc}`);
     else out.push(`## ${filePath}`);
 
     try {

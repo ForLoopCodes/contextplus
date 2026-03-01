@@ -389,7 +389,7 @@ export async function semanticIdentifierSearch(options: SemanticIdentifierSearch
   for (let i = 0; i < top.length; i++) {
     const item = top[i];
     const range = formatLineRange(item.doc.line, item.doc.endLine);
-    lines.push(`${i + 1}. ${item.doc.kind} ${item.doc.name} — ${item.doc.path} (${range})`);
+    lines.push(`${i + 1}. ${item.doc.kind} ${item.doc.name} - ${item.doc.path} (${range})`);
     lines.push(`   Score: ${Math.round(item.score * 1000) / 10}% | Semantic: ${Math.round(item.semanticScore * 1000) / 10}% | Keyword: ${Math.round(item.keywordScore * 1000) / 10}%`);
     lines.push(`   Signature: ${item.doc.signature}`);
     if (item.doc.parentName) lines.push(`   Parent: ${item.doc.parentName}`);

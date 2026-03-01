@@ -14,30 +14,30 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 
 **Core Layer** (\`src/core/\`):
 
-- \`parser.ts\` — Multi-language symbol extraction via tree-sitter AST with regex fallback. Supports 14+ languages.
-- \`tree-sitter.ts\` — WASM grammar loader for 43 file extensions using web-tree-sitter 0.20.8.
-- \`walker.ts\` — Gitignore-aware recursive directory traversal with depth and target path control.
-- \`embeddings.ts\` — Ollama vector embedding engine with disk cache, cosine similarity search, and API key support.
+- \`parser.ts\` - Multi-language symbol extraction via tree-sitter AST with regex fallback. Supports 14+ languages.
+- \`tree-sitter.ts\` - WASM grammar loader for 43 file extensions using web-tree-sitter 0.20.8.
+- \`walker.ts\` - Gitignore-aware recursive directory traversal with depth and target path control.
+- \`embeddings.ts\` - Ollama vector embedding engine with disk cache, cosine similarity search, and API key support.
 
 **Tools Layer** (\`src/tools/\`):
 
-- \`context-tree.ts\` — Token-aware structural tree with symbol line ranges and Level 0/1/2 pruning.
-- \`file-skeleton.ts\` — Function signatures with line ranges, without reading full bodies.
-- \`semantic-search.ts\` — Ollama-powered semantic file search with symbol definition lines and 60s cache TTL.
-- \`semantic-identifiers.ts\` — Identifier-level semantic search returning ranked definitions + call chains with line numbers.
-- \`semantic-navigate.ts\` — Browse-by-meaning navigator using spectral clustering and Ollama labeling.
-- \`blast-radius.ts\` — Symbol usage tracer across the entire codebase.
-- \`static-analysis.ts\` — Native linter runner (tsc, eslint, py_compile, cargo check, go vet).
-- \`propose-commit.ts\` — Code gatekeeper validating headers, FEATURE tag, no inline comments, nesting, file length.
-- \`feature-hub.ts\` — Obsidian-style feature hub navigator with bundled skeleton views.
+- \`context-tree.ts\` - Token-aware structural tree with symbol line ranges and Level 0/1/2 pruning.
+- \`file-skeleton.ts\` - Function signatures with line ranges, without reading full bodies.
+- \`semantic-search.ts\` - Ollama-powered semantic file search with symbol definition lines and 60s cache TTL.
+- \`semantic-identifiers.ts\` - Identifier-level semantic search returning ranked definitions + call chains with line numbers.
+- \`semantic-navigate.ts\` - Browse-by-meaning navigator using spectral clustering and Ollama labeling.
+- \`blast-radius.ts\` - Symbol usage tracer across the entire codebase.
+- \`static-analysis.ts\` - Native linter runner (tsc, eslint, py_compile, cargo check, go vet).
+- \`propose-commit.ts\` - Code gatekeeper validating headers, FEATURE tag, no inline comments, nesting, file length.
+- \`feature-hub.ts\` - Obsidian-style feature hub navigator with bundled skeleton views.
 
 **Core Layer** (continued):
 
-- \`hub.ts\` — Wikilink parser for \`[[path]]\` links, cross-link tags, hub discovery, orphan detection.
+- \`hub.ts\` - Wikilink parser for \`[[path]]\` links, cross-link tags, hub discovery, orphan detection.
 
 **Git Layer** (\`src/git/\`):
 
-- \`shadow.ts\` — Shadow restore point system for undo without touching git history.
+- \`shadow.ts\` - Shadow restore point system for undo without touching git history.
 
 **Entry Point**: \`src/index.ts\` registers 11 MCP tools and starts the stdio transport. Accepts an optional CLI argument for the target project root directory (defaults to \`process.cwd()\`).
 
@@ -94,7 +94,7 @@ FEATURE: Core parsing layer for structural code analysis
 \`\`\`
 
 Line 1: What the file does.
-Line 2: \`FEATURE: <name>\` — the primary feature it belongs to. Links to hub.
+Line 2: \`FEATURE: <name>\` - the primary feature it belongs to. Links to hub.
 
 ### Zero Comments
 
@@ -239,7 +239,8 @@ export default function InstructionsSection() {
               lineHeight: "28px",
               fontFamily: "var(--font-geist-pixel-square)",
               letterSpacing: "-0.02em",
-              background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
+              background:
+                "linear-gradient(180deg, var(--text-primary) 0%, var(--gradient-end) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text" as const,
@@ -275,7 +276,7 @@ export default function InstructionsSection() {
                 style={{
                   fontSize: 13,
                   fontWeight: 300,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-faint)",
                   fontFamily: "var(--font-geist-mono)",
                 }}
               >
@@ -290,7 +291,7 @@ export default function InstructionsSection() {
                   padding: "4px 8px",
                   fontSize: 13,
                   fontWeight: 300,
-                  color: copied ? "var(--text-primary)" : "var(--text-secondary)",
+                  color: copied ? "var(--text-primary)" : "var(--text-faint)",
                   fontFamily: "var(--font-geist-mono)",
                   transition: "color 0.15s",
                 }}
@@ -304,7 +305,7 @@ export default function InstructionsSection() {
                 fontSize: 13,
                 fontWeight: 300,
                 lineHeight: "20px",
-                color: "var(--text-secondary)",
+                color: "var(--text-body)",
                 padding: "12px 24px 20px",
                 overflow: "auto",
                 whiteSpace: "pre-wrap",

@@ -220,18 +220,24 @@ export default function IsometricDiagram() {
             const yPos = visualIdx * STACK_DY;
 
             const t = visualIdx / (functions.length - 1);
-            // Dark mode: brighter borders (white to gray), Light mode: darker borders (black to gray)
             const grayLight = Math.round(t * 210);
             const grayDark = Math.round(255 - t * 180);
             const gray = isDark ? grayDark : grayLight;
             const borderColor = `rgb(${gray},${gray},${gray})`;
 
-            // Theme-aware backgrounds
-            const cardBg = isDark ? "rgba(20,20,20,0.85)" : "rgba(239,239,239,0.8)";
-            const labelBg = isDark ? "rgba(20,20,20,0.8)" : "rgba(239,239,239,0.7)";
+            const cardBg = isDark
+              ? "rgba(20,20,20,0.85)"
+              : "rgba(239,239,239,0.8)";
+            const labelBg = isDark
+              ? "rgba(20,20,20,0.8)"
+              : "rgba(239,239,239,0.7)";
             const cardShadow = isHovered
-              ? isDark ? "0 16px 40px rgba(0,0,0,0.4)" : "0 16px 40px rgba(0,0,0,0.18)"
-              : isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 2px 8px rgba(0,0,0,0.04)";
+              ? isDark
+                ? "0 16px 40px rgba(0,0,0,0.4)"
+                : "0 16px 40px rgba(0,0,0,0.18)"
+              : isDark
+                ? "0 2px 8px rgba(0,0,0,0.2)"
+                : "0 2px 8px rgba(0,0,0,0.04)";
 
             const isFadingOut = animPhase === "fade-out" && isAnimCard;
             const isFadingIn = animPhase === "fade-in" && isAnimCard;

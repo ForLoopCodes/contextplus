@@ -161,7 +161,7 @@ function renderClusterTree(node: ClusterNode, indent: number = 0): string {
     }
   } else {
     for (const file of node.files) {
-      const label = file.header ? ` — ${file.header}` : "";
+      const label = file.header ? ` - ${file.header}` : "";
       const symbols = file.symbolPreview.length > 0 ? ` | symbols: ${file.symbolPreview.join(", ")}` : "";
       result += `${pad}  ${file.relativePath}${label}${symbols}\n`;
     }
@@ -228,7 +228,7 @@ export async function semanticNavigate(options: SemanticNavigateOptions): Promis
     const lines = [`Semantic Navigator: ${files.length} files\n`];
     for (let i = 0; i < files.length; i++) {
       const symbols = files[i].symbolPreview.length > 0 ? ` | symbols: ${files[i].symbolPreview.join(", ")}` : "";
-      lines.push(`  ${files[i].relativePath} — ${fileLabels[i] || files[i].header}${symbols}`);
+      lines.push(`  ${files[i].relativePath} - ${fileLabels[i] || files[i].header}${symbols}`);
     }
     return lines.join("\n");
   }

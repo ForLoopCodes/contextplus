@@ -10,30 +10,30 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 
 **Core Layer** (`src/core/`):
 
-- `parser.ts` — Multi-language symbol extraction via tree-sitter AST with regex fallback. Supports 14+ languages.
-- `tree-sitter.ts` — WASM grammar loader for 43 file extensions using web-tree-sitter 0.20.8.
-- `walker.ts` — Gitignore-aware recursive directory traversal with depth and target path control.
-- `embeddings.ts` — Ollama vector embedding engine with disk cache, cosine similarity search, and API key support.
+- `parser.ts` - Multi-language symbol extraction via tree-sitter AST with regex fallback. Supports 14+ languages.
+- `tree-sitter.ts` - WASM grammar loader for 43 file extensions using web-tree-sitter 0.20.8.
+- `walker.ts` - Gitignore-aware recursive directory traversal with depth and target path control.
+- `embeddings.ts` - Ollama vector embedding engine with disk cache, cosine similarity search, and API key support.
 
 **Tools Layer** (`src/tools/`):
 
-- `context-tree.ts` — Token-aware structural tree with symbol line ranges and Level 0/1/2 pruning.
-- `file-skeleton.ts` — Function signatures with line ranges, without reading full bodies.
-- `semantic-search.ts` — Ollama-powered semantic file search with symbol definition lines and 60s cache TTL.
-- `semantic-identifiers.ts` — Identifier-level semantic search returning ranked definitions + call chains with line numbers.
-- `semantic-navigate.ts` — Browse-by-meaning navigator using spectral clustering and Ollama labeling.
-- `blast-radius.ts` — Symbol usage tracer across the entire codebase.
-- `static-analysis.ts` — Native linter runner (tsc, eslint, py_compile, cargo check, go vet).
-- `propose-commit.ts` — Code gatekeeper validating headers, FEATURE tag, no inline comments, nesting, file length.
-- `feature-hub.ts` — Obsidian-style feature hub navigator with bundled skeleton views.
+- `context-tree.ts` - Token-aware structural tree with symbol line ranges and Level 0/1/2 pruning.
+- `file-skeleton.ts` - Function signatures with line ranges, without reading full bodies.
+- `semantic-search.ts` - Ollama-powered semantic file search with symbol definition lines and 60s cache TTL.
+- `semantic-identifiers.ts` - Identifier-level semantic search returning ranked definitions + call chains with line numbers.
+- `semantic-navigate.ts` - Browse-by-meaning navigator using spectral clustering and Ollama labeling.
+- `blast-radius.ts` - Symbol usage tracer across the entire codebase.
+- `static-analysis.ts` - Native linter runner (tsc, eslint, py_compile, cargo check, go vet).
+- `propose-commit.ts` - Code gatekeeper validating headers, FEATURE tag, no inline comments, nesting, file length.
+- `feature-hub.ts` - Obsidian-style feature hub navigator with bundled skeleton views.
 
 **Core Layer** (continued):
 
-- `hub.ts` — Wikilink parser for `[[path]]` links, cross-link tags, hub discovery, orphan detection.
+- `hub.ts` - Wikilink parser for `[[path]]` links, cross-link tags, hub discovery, orphan detection.
 
 **Git Layer** (`src/git/`):
 
-- `shadow.ts` — Shadow restore point system for undo without touching git history.
+- `shadow.ts` - Shadow restore point system for undo without touching git history.
 
 **Entry Point**: `src/index.ts` registers 11 MCP tools and starts the stdio transport. Accepts an optional CLI argument for the target project root directory (defaults to `process.cwd()`).
 
@@ -90,7 +90,7 @@ Every file MUST start with exactly 2 comment lines (10 words each) explaining th
 ```
 
 Line 1: What the file does.
-Line 2: `FEATURE: <name>` — the primary feature it belongs to. Links to hub.
+Line 2: `FEATURE: <name>` - the primary feature it belongs to. Links to hub.
 
 ### Zero Comments
 
