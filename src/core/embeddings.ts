@@ -63,6 +63,9 @@ const CACHE_FILE = "embeddings-cache.json";
 const MIN_EMBED_BATCH_SIZE = 5;
 const MAX_EMBED_BATCH_SIZE = 10;
 const DEFAULT_EMBED_BATCH_SIZE = 8;
+const MIN_EMBED_INPUT_CHARS = 256;
+const SINGLE_INPUT_SHRINK_FACTOR = 0.75;
+const MAX_SINGLE_INPUT_RETRIES = 8;
 
 const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
 
@@ -77,6 +80,62 @@ export function getEmbeddingBatchSize(): number {
   return Math.min(MAX_EMBED_BATCH_SIZE, Math.max(MIN_EMBED_BATCH_SIZE, requested));
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+function isContextLengthError(error: unknown): boolean {
+  const message = getErrorMessage(error).toLowerCase();
+  return message.includes("input length exceeds context length")
+    || (message.includes("context") && message.includes("exceed"));
+}
+
+function shrinkEmbeddingInput(input: string): string {
+  if (input.length <= MIN_EMBED_INPUT_CHARS) return input;
+  const nextLength = Math.max(MIN_EMBED_INPUT_CHARS, Math.floor(input.length * SINGLE_INPUT_SHRINK_FACTOR));
+  if (nextLength >= input.length) return input.slice(0, input.length - 1);
+  return input.slice(0, nextLength);
+}
+
+async function embedSingleAdaptive(input: string): Promise<number[]> {
+  let candidate = input;
+
+  for (let attempt = 0; attempt <= MAX_SINGLE_INPUT_RETRIES; attempt++) {
+    try {
+      const response = await ollama.embed({ model: EMBED_MODEL, input: [candidate] });
+      if (!response.embeddings[0]) throw new Error("Missing embedding vector in Ollama response");
+      return response.embeddings[0];
+    } catch (error) {
+      if (!isContextLengthError(error)) throw error;
+      const nextCandidate = shrinkEmbeddingInput(candidate);
+      if (nextCandidate.length === candidate.length) throw error;
+      candidate = nextCandidate;
+    }
+  }
+
+  throw new Error("Unable to embed oversized input after adaptive retries");
+}
+
+async function embedBatchAdaptive(batch: string[]): Promise<number[][]> {
+  try {
+    const response = await ollama.embed({ model: EMBED_MODEL, input: batch });
+    if (response.embeddings.length !== batch.length) {
+      throw new Error(`Embedding response size mismatch: expected ${batch.length}, got ${response.embeddings.length}`);
+    }
+    return response.embeddings;
+  } catch (error) {
+    if (!isContextLengthError(error)) throw error;
+    if (batch.length === 1) {
+      return [await embedSingleAdaptive(batch[0])];
+    }
+    const middle = Math.ceil(batch.length / 2);
+    const left = await embedBatchAdaptive(batch.slice(0, middle));
+    const right = await embedBatchAdaptive(batch.slice(middle));
+    return [...left, ...right];
+  }
+}
+
 export async function fetchEmbedding(input: string | string[]): Promise<number[][]> {
   const inputs = Array.isArray(input) ? input : [input];
   if (inputs.length === 0) return [];
@@ -86,8 +145,7 @@ export async function fetchEmbedding(input: string | string[]): Promise<number[]
 
   for (let i = 0; i < inputs.length; i += batchSize) {
     const batch = inputs.slice(i, i + batchSize);
-    const response = await ollama.embed({ model: EMBED_MODEL, input: batch });
-    embeddings.push(...response.embeddings);
+    embeddings.push(...await embedBatchAdaptive(batch));
   }
 
   return embeddings;
