@@ -66,7 +66,7 @@ function buildInitCommand(runner: string, agent: string): string {
 
 function highlightJson(json: string): ReactNode[] {
   const tokenRegex =
-    /("(?:[^"\\]|\\.)*")\s*:|("(?:[^"\\]|\\.)*")|(\btrue\b|\bfalse\b|\bnull\b)|(-?\d+(?:\.\d+)?)|([{}[\]:,])/g;
+    /"(?:[^"\\]|\\.)*"\s*:|"(?:[^"\\]|\\.)*"|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?|[{}[\]:,]/g;
 
   const parts: ReactNode[] = [];
   let lastIndex = 0;
@@ -77,40 +77,35 @@ function highlightJson(json: string): ReactNode[] {
       parts.push(json.slice(lastIndex, match.index));
     }
 
-    if (match[1]) {
+    const token = match[0];
+    if (token.endsWith(":")) {
       parts.push(
-        <span key={match.index} style={{ color: "#111" }}>
-          {match[1]}
+        <span key={match.index} style={{ color: "var(--text-primary)" }}>
+          {token}
         </span>,
       );
+    } else if (token.startsWith('"')) {
       parts.push(
-        json.slice(
-          match.index + match[1].length,
-          match.index + match[0].length,
-        ),
-      );
-    } else if (match[2]) {
-      parts.push(
-        <span key={match.index} style={{ color: "#555" }}>
-          {match[2]}
+        <span key={match.index} style={{ color: "var(--text-secondary)" }}>
+          {token}
         </span>,
       );
-    } else if (match[3]) {
+    } else if (token === "true" || token === "false" || token === "null") {
       parts.push(
-        <span key={match.index} style={{ color: "#333" }}>
-          {match[3]}
+        <span key={match.index} style={{ color: "var(--text-secondary)" }}>
+          {token}
         </span>,
       );
-    } else if (match[4]) {
+    } else if (/^-?\d/.test(token)) {
       parts.push(
-        <span key={match.index} style={{ color: "#333" }}>
-          {match[4]}
+        <span key={match.index} style={{ color: "var(--text-secondary)" }}>
+          {token}
         </span>,
       );
-    } else if (match[5]) {
+    } else {
       parts.push(
-        <span key={match.index} style={{ color: "#999" }}>
-          {match[5]}
+        <span key={match.index} style={{ color: "var(--text-muted)" }}>
+          {token}
         </span>,
       );
     }
@@ -179,7 +174,7 @@ export default function IdeSetup() {
               lineHeight: "28px",
               fontFamily: "var(--font-geist-pixel-square)",
               letterSpacing: "-0.02em",
-              background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+              background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -215,9 +210,9 @@ export default function IdeSetup() {
                     fontWeight: 300,
                     fontFamily: "var(--font-geist-mono)",
                     letterSpacing: "-0.02em",
-                    color: activeIde === i.id ? "#000" : "#888",
+                    color: activeIde === i.id ? "var(--text-primary)" : "var(--text-secondary)",
                     background:
-                      activeIde === i.id ? "rgba(0,0,0,0.04)" : "none",
+                      activeIde === i.id ? "var(--code-bg)" : "none",
                     backdropFilter: activeIde === i.id ? "blur(8px)" : "none",
                     WebkitBackdropFilter:
                       activeIde === i.id ? "blur(8px)" : "none",
@@ -241,9 +236,9 @@ export default function IdeSetup() {
                     fontSize: 13,
                     fontWeight: 300,
                     fontFamily: "var(--font-geist-mono)",
-                    color: activeRunner === r.id ? "#000" : "#888",
+                    color: activeRunner === r.id ? "var(--text-primary)" : "var(--text-secondary)",
                     background:
-                      activeRunner === r.id ? "rgba(0,0,0,0.04)" : "none",
+                      activeRunner === r.id ? "var(--code-bg)" : "none",
                     backdropFilter:
                       activeRunner === r.id ? "blur(8px)" : "none",
                     WebkitBackdropFilter:
@@ -262,7 +257,7 @@ export default function IdeSetup() {
 
           <div
             style={{
-              background: "rgba(0,0,0,0.04)",
+              background: "var(--code-bg)",
               backdropFilter: "blur(8px)",
               WebkitBackdropFilter: "blur(8px)",
               borderRadius: 14,
@@ -282,7 +277,7 @@ export default function IdeSetup() {
                 style={{
                   fontSize: 13,
                   fontWeight: 300,
-                  color: "#888",
+                  color: "var(--text-secondary)",
                   fontFamily: "var(--font-geist-mono)",
                 }}
               >
@@ -297,7 +292,7 @@ export default function IdeSetup() {
                   padding: "4px 8px",
                   fontSize: 13,
                   fontWeight: 300,
-                  color: copied ? "#000" : "#888",
+                  color: copied ? "var(--text-primary)" : "var(--text-secondary)",
                   fontFamily: "var(--font-geist-mono)",
                   transition: "color 0.15s",
                 }}
@@ -311,7 +306,7 @@ export default function IdeSetup() {
                 fontSize: 13,
                 fontWeight: 300,
                 lineHeight: "20px",
-                color: "#333",
+                color: "var(--text-secondary)",
                 padding: "12px 24px 20px",
                 overflow: "auto",
                 whiteSpace: "pre",
@@ -324,7 +319,7 @@ export default function IdeSetup() {
 
           <div
             style={{
-              background: "rgba(0,0,0,0.04)",
+              background: "var(--code-bg)",
               backdropFilter: "blur(8px)",
               WebkitBackdropFilter: "blur(8px)",
               borderRadius: 14,
@@ -344,7 +339,7 @@ export default function IdeSetup() {
                 style={{
                   fontSize: 13,
                   fontWeight: 300,
-                  color: "#888",
+                  color: "var(--text-secondary)",
                   fontFamily: "var(--font-geist-mono)",
                 }}
               >
@@ -359,7 +354,7 @@ export default function IdeSetup() {
                   padding: "4px 8px",
                   fontSize: 13,
                   fontWeight: 300,
-                  color: copiedInit ? "#000" : "#888",
+                  color: copiedInit ? "var(--text-primary)" : "var(--text-secondary)",
                   fontFamily: "var(--font-geist-mono)",
                   transition: "color 0.15s",
                 }}
@@ -373,7 +368,7 @@ export default function IdeSetup() {
                 fontSize: 13,
                 fontWeight: 300,
                 lineHeight: "20px",
-                color: "#333",
+                color: "var(--text-secondary)",
                 padding: "12px 24px 20px",
                 overflow: "auto",
                 whiteSpace: "pre",
@@ -396,7 +391,7 @@ export default function IdeSetup() {
               fontSize: 13,
               fontWeight: 300,
               fontFamily: "var(--font-geist-pixel-square)",
-              color: "#888",
+              color: "var(--text-secondary)",
               textDecoration: "none",
               transition: "color 0.15s",
             }}

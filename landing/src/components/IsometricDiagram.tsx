@@ -2,6 +2,26 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 
+function useTheme() {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const checkTheme = () => {
+      const theme = document.documentElement.getAttribute("data-theme");
+      setIsDark(theme === "dark");
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  return isDark;
+}
+
 const functions = [
   {
     id: "context-tree",
@@ -86,6 +106,7 @@ export default function IsometricDiagram() {
   const [animating, setAnimating] = useState(false);
   const [animCardId, setAnimCardId] = useState<number | null>(null);
   const [windowWidth, setWindowWidth] = useState(1200);
+  const isDark = useTheme();
 
   useEffect(() => {
     const update = () => setWindowWidth(window.innerWidth);
@@ -171,7 +192,7 @@ export default function IsometricDiagram() {
         aspectRatio: isMobile ? "1 / 1" : undefined,
         justifyContent: isMobile ? "center" : "flex-end",
         marginBottom: `${isMobile ? 20 : isVerySmallDesktop ? 60 : isSmallDesktop ? 120 : 300}px !important`,
-        padding: isMobile ? "0 20px 30px" : "0 60px 40px 100px",
+        padding: isMobile ? "0 20px 30px" : "0 100px 40px 100px",
         overflow: isMobile ? "hidden" : undefined,
       }}
     >
@@ -199,8 +220,18 @@ export default function IsometricDiagram() {
             const yPos = visualIdx * STACK_DY;
 
             const t = visualIdx / (functions.length - 1);
-            const gray = Math.round(t * 210);
+            // Dark mode: brighter borders (white to gray), Light mode: darker borders (black to gray)
+            const grayLight = Math.round(t * 210);
+            const grayDark = Math.round(255 - t * 180);
+            const gray = isDark ? grayDark : grayLight;
             const borderColor = `rgb(${gray},${gray},${gray})`;
+
+            // Theme-aware backgrounds
+            const cardBg = isDark ? "rgba(20,20,20,0.85)" : "rgba(239,239,239,0.8)";
+            const labelBg = isDark ? "rgba(20,20,20,0.8)" : "rgba(239,239,239,0.7)";
+            const cardShadow = isHovered
+              ? isDark ? "0 16px 40px rgba(0,0,0,0.4)" : "0 16px 40px rgba(0,0,0,0.18)"
+              : isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 2px 8px rgba(0,0,0,0.04)";
 
             const isFadingOut = animPhase === "fade-out" && isAnimCard;
             const isFadingIn = animPhase === "fade-in" && isAnimCard;
@@ -236,10 +267,8 @@ export default function IsometricDiagram() {
                       : "translateZ(0)",
                   opacity: isFadingOut ? 0 : isFadingIn ? 0.5 : 1,
                   filter: isFadingOut ? "blur(8px)" : "blur(0px)",
-                  boxShadow: isHovered
-                    ? "0 16px 40px rgba(0,0,0,0.18)"
-                    : "0 2px 8px rgba(0,0,0,0.04)",
-                  background: "rgba(239,239,239,0.8)",
+                  boxShadow: cardShadow,
+                  background: cardBg,
                   backdropFilter: "blur(6px)",
                   WebkitBackdropFilter: "blur(6px)",
                   zIndex: isHovered ? 10 : functions.length - visualIdx,
@@ -293,7 +322,7 @@ export default function IsometricDiagram() {
                     letterSpacing: "-0.01em",
                     whiteSpace: "nowrap",
                     pointerEvents: "none",
-                    background: "rgba(239,239,239,0.7)",
+                    background: labelBg,
                     backdropFilter: "blur(4px)",
                     WebkitBackdropFilter: "blur(4px)",
                     padding: "2px 6px",
