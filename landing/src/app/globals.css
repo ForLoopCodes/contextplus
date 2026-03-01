@@ -1,5 +1,43 @@
 @import "tailwindcss";
 
+:root {
+  --bg-primary: #efefef;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f5f5;
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-muted: rgba(0, 0, 0, 0.5);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --nav-bg: rgba(239, 239, 239, 0.6);
+  --toggle-bg: rgba(255, 255, 255, 0.8);
+  --shadow-color: rgba(0, 0, 0, 0.07);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.12);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+  --code-bg: #f8f8f8;
+  --code-border: rgba(0, 0, 0, 0.08);
+  --table-border: rgba(0, 0, 0, 0.06);
+  --icon-color: #1e1e1e;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1a1a1a;
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a0;
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --nav-bg: rgba(10, 10, 10, 0.6);
+  --toggle-bg: rgba(30, 30, 30, 0.8);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  --code-bg: #1a1a1a;
+  --code-border: rgba(255, 255, 255, 0.08);
+  --table-border: rgba(255, 255, 255, 0.06);
+  --icon-color: #e0e0e0;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -7,10 +45,11 @@
 }
 
 body {
-  background: #efefef;
-  color: #000;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 h1,
@@ -28,27 +67,30 @@ label,
 .site-footer,
 .hero-title,
 .hero-text {
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  text-shadow: 0 4px 12px var(--shadow-color);
 }
 
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--scrollbar-thumb-hover);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 @media (min-width: 1600px) {
@@ -57,30 +99,37 @@ label,
     padding-right: 200px !important;
     min-height: 70vh !important;
   }
+
   .iso-diagram {
+    padding-left: 200px !important;
     padding-right: 200px !important;
   }
 }
+
 @media (max-width: 1000px) {
   .hero-diagram-row {
     min-height: 60vh !important;
   }
 }
+
 @media (min-width: 1000px) and (max-width: 1400px) {
   .hero-diagram-row {
     min-height: 50vh !important;
   }
 }
+
 @media (min-width: 1400px) and (max-width: 1600px) {
   .hero-diagram-row {
     min-height: 60vh !important;
   }
 }
+
 @media (min-width: 1440px) {
   .tool-square {
     width: 180px !important;
     height: 180px !important;
   }
+
   .diagram-groups {
     gap: 24px !important;
   }
@@ -91,6 +140,7 @@ label,
     width: 220px !important;
     height: 220px !important;
   }
+
   .diagram-groups {
     gap: 32px !important;
   }
@@ -107,62 +157,77 @@ label,
   .hero-diagram-row {
     padding: 48px 60px 20px !important;
   }
+
   .nav-bar {
     padding: 40px 60px 30px !important;
   }
+
   .hero-section {
     padding: 48px 60px !important;
   }
+
   .instructions-section {
     padding: 0 60px 40px !important;
   }
+
   .hero-title {
     font-size: 44px !important;
     line-height: 56px !important;
   }
+
   .hero-text {
     font-size: 16px !important;
     line-height: 26px !important;
   }
+
   .diagram-outer {
     margin-left: 60px !important;
     margin-right: 60px !important;
     width: auto !important;
   }
+
   .diagram-groups {
     flex-direction: column !important;
     width: 100% !important;
   }
-  .diagram-groups > div {
+
+  .diagram-groups>div {
     width: 100% !important;
   }
+
   .group-inner-col {
     flex-direction: row !important;
     flex-wrap: wrap !important;
     width: 100% !important;
   }
-  .group-inner-col > div {
+
+  .group-inner-col>div {
     flex: 1 1 0 !important;
     min-width: 0 !important;
   }
+
   .discovery-grid {
     grid-template-columns: 1fr 1fr !important;
     width: 100% !important;
   }
+
   .tool-square {
     width: 100% !important;
     max-width: none !important;
     height: 80px !important;
     aspect-ratio: auto !important;
   }
+
   .quote-section {
     padding: 60px 60px !important;
     min-height: 70vh !important;
   }
+
   .quote-section p {
     font-size: 32px !important;
     line-height: 48px !important;
   }
+
   .site-footer {
     padding: 40px 60px !important;
   }
@@ -173,71 +238,90 @@ label,
     padding: 32px 20px 16px !important;
     flex-direction: column !important;
   }
+
   .nav-bar {
     padding: 20px 20px 16px !important;
   }
+
   .hero-section {
     padding: 32px 20px !important;
   }
+
   .hero-title {
     font-size: 26px !important;
     line-height: 40px !important;
   }
+
   .hero-text {
     font-size: 15px !important;
     line-height: 24px !important;
   }
+
   .diagram-outer {
     margin-left: 20px !important;
     margin-right: 20px !important;
   }
+
   .tool-square {
     max-width: none !important;
     height: 70px !important;
   }
+
   .tools-ref {
     padding: 40px 20px !important;
   }
+
   .ide-setup {
     padding: 40px 20px !important;
   }
+
   .instructions-section {
     padding: 0 20px 40px !important;
   }
+
   .ide-tab-bar {
     flex-direction: column !important;
     align-items: flex-start !important;
   }
+
   .ide-tab-bar button {
     padding: 8px 12px !important;
     font-size: 12px !important;
   }
+
   .tools-ref td {
     display: block !important;
     padding: 8px 0 !important;
   }
+
   .tools-ref tr {
     display: block !important;
     padding: 16px 0 !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
   }
+
   .tools-ref td:first-child {
     border-bottom: none !important;
   }
+
   .tools-ref td:last-child {
     border-bottom: none !important;
   }
+
   .tools-ref .code-pair {
     flex-direction: column !important;
   }
+
   .quote-section {
     padding: 40px 20px !important;
     min-height: 70vh !important;
   }
+
   .quote-section p {
     font-size: 24px !important;
     line-height: 36px !important;
   }
+
   .site-footer {
     padding: 60px 20px !important;
     flex-direction: column !important;
@@ -249,10 +333,12 @@ label,
   .tool-square {
     height: 60px !important;
   }
+
   .discovery-grid {
     gap: 8px !important;
     padding: 12px !important;
   }
+
   .group-inner-col {
     padding: 12px !important;
   }
@@ -262,18 +348,23 @@ label,
   .ide-inner-row {
     gap: 0 !important;
   }
+
   .ide-dashed-square {
     display: none !important;
   }
+
   .ide-setup {
     justify-content: center !important;
   }
+
   .instr-inner-row {
     gap: 0 !important;
   }
+
   .instr-dashed-square {
     display: none !important;
   }
+
   .instructions-section {
     justify-content: center !important;
   }

@@ -239,7 +239,7 @@ export default function InstructionsSection() {
               lineHeight: "28px",
               fontFamily: "var(--font-geist-pixel-square)",
               letterSpacing: "-0.02em",
-              background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+              background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text" as const,
@@ -256,7 +256,7 @@ export default function InstructionsSection() {
 
           <div
             style={{
-              background: "rgba(0,0,0,0.04)",
+              background: "var(--code-bg)",
               backdropFilter: "blur(8px)",
               WebkitBackdropFilter: "blur(8px)",
               borderRadius: 14,
@@ -275,7 +275,7 @@ export default function InstructionsSection() {
                 style={{
                   fontSize: 13,
                   fontWeight: 300,
-                  color: "#888",
+                  color: "var(--text-secondary)",
                   fontFamily: "var(--font-geist-mono)",
                 }}
               >
@@ -290,7 +290,7 @@ export default function InstructionsSection() {
                   padding: "4px 8px",
                   fontSize: 13,
                   fontWeight: 300,
-                  color: copied ? "#000" : "#888",
+                  color: copied ? "var(--text-primary)" : "var(--text-secondary)",
                   fontFamily: "var(--font-geist-mono)",
                   transition: "color 0.15s",
                 }}
@@ -304,7 +304,7 @@ export default function InstructionsSection() {
                 fontSize: 13,
                 fontWeight: 300,
                 lineHeight: "20px",
-                color: "#333",
+                color: "var(--text-secondary)",
                 padding: "12px 24px 20px",
                 overflow: "auto",
                 whiteSpace: "pre-wrap",

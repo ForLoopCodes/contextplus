@@ -1,50 +1,11 @@
 import Background from "../components/Background";
+import Header from "../components/Header";
 import IdeSetup from "../components/IdeSetup";
 import InstructionsSection from "../components/InstructionsSection";
 import IsometricDiagram from "../components/IsometricDiagram";
+import ToolDiagram from "../components/ToolDiagram";
 
 export const dynamic = "force-dynamic";
-
-const toolGroups = [
-  {
-    name: "Discovery",
-    color: "#000000",
-    layout: "grid" as const,
-    tools: [
-      { color: "#000000", label: "Context Tree" },
-      { color: "#111111", label: "File Skeleton" },
-      { color: "#222222", label: "Semantic Search" },
-      { color: "#333333", label: "Semantic Identifiers" },
-    ],
-  },
-  {
-    name: "Analysis",
-    color: "#444444",
-    layout: "column" as const,
-    tools: [
-      { color: "#444444", label: "Blast Radius" },
-      { color: "#555555", label: "Static Analysis" },
-    ],
-  },
-  {
-    name: "Code Ops",
-    color: "#666666",
-    layout: "column" as const,
-    tools: [
-      { color: "#666666", label: "Propose Commit" },
-      { color: "#777777", label: "Feature Hub" },
-    ],
-  },
-  {
-    name: "Version Control",
-    color: "#888888",
-    layout: "column" as const,
-    tools: [
-      { color: "#888888", label: "Restore Points" },
-      { color: "#999999", label: "Undo Change" },
-    ],
-  },
-];
 
 const toolRefRows = [
   {
@@ -150,63 +111,7 @@ export default async function Home() {
   return (
     <div className="relative w-full min-h-screen">
       <Background />
-      <nav
-        className="nav-bar flex justify-between items-center"
-        style={{
-          padding: "40px 100px 30px",
-          zIndex: 10,
-          position: "sticky",
-          top: 0,
-          background: "rgba(239,239,239,0.6)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}
-      >
-        <span
-          className="font-light text-black"
-          style={{ fontSize: 22, lineHeight: "28px" }}
-        >
-          Context+
-        </span>
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <a
-            href="https://www.npmjs.com/package/contextplus"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-          >
-            <svg width="20" height="20" viewBox="0 0 256 256" fill="#1E1E1E">
-              <path d="M0 256V0h256v256H0zm41-41h57.5V71.2H141V215h34V41H41v174z" />
-            </svg>
-          </a>
-          <a
-            href="https://github.com/ForLoopCodes/contextplus"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-            style={{ gap: 8 }}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#1E1E1E"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-            </svg>
-            <span
-              className="font-light text-black"
-              style={{ fontSize: 18, lineHeight: "24px" }}
-            >
-              {stars}
-            </span>
-          </a>
-        </div>
-      </nav>
+      <Header stars={stars} />
 
       <div
         className="hero-diagram-row"
@@ -229,13 +134,13 @@ export default async function Home() {
               fontSize: 56,
               lineHeight: "72px",
               letterSpacing: "-0.02em",
-              color: "rgba(0,0,0,0.5)",
+              color: "var(--text-muted)",
               fontFamily: "var(--font-geist-sans)",
             }}
           >
             Semantic Intelligence for
             <br />
-            <span className="text-black">Large-Scale Engineering.</span>
+            <span style={{ color: "var(--text-primary)" }}>Large-Scale Engineering.</span>
           </h1>
           <p
             className="hero-text font-light"
@@ -243,7 +148,7 @@ export default async function Home() {
               fontSize: 18,
               lineHeight: "28px",
               letterSpacing: "-0.02em",
-              background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+              background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -271,215 +176,7 @@ export default async function Home() {
           justifyContent: "center",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              flex: 1,
-              height: 8,
-              minWidth: 40,
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <svg
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-              }}
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <pattern
-                  id="sep-left"
-                  width="6"
-                  height="6"
-                  patternUnits="userSpaceOnUse"
-                  patternTransform="rotate(45)"
-                >
-                  <line
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="6"
-                    stroke="#333333"
-                    strokeWidth="1.5"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#sep-left)" />
-            </svg>
-          </div>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "#000000",
-              fontFamily: "var(--font-geist-pixel-square)",
-              letterSpacing: "-0.02em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Context+ MCP
-          </span>
-          <div
-            style={{
-              flex: 1,
-              height: 8,
-              minWidth: 40,
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <svg
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-              }}
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <pattern
-                  id="sep-right"
-                  width="6"
-                  height="6"
-                  patternUnits="userSpaceOnUse"
-                  patternTransform="rotate(45)"
-                >
-                  <line
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="6"
-                    stroke="#888888"
-                    strokeWidth="1.5"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#sep-right)" />
-            </svg>
-          </div>
-        </div>
-        <div
-          className="diagram-groups"
-          style={{ display: "flex", gap: 16, alignItems: "flex-start" }}
-        >
-          {toolGroups.map(({ name, color, layout, tools }) => (
-            <div
-              key={name}
-              style={{ display: "flex", flexDirection: "column", gap: 8 }}
-            >
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color,
-                  fontFamily: "var(--font-geist-pixel-square)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                {name}
-              </span>
-              <div
-                className={
-                  layout === "grid" ? "discovery-grid" : "group-inner-col"
-                }
-                style={{
-                  display: layout === "grid" ? "grid" : "flex",
-                  ...(layout === "grid"
-                    ? { gridTemplateColumns: "1fr 1fr" }
-                    : { flexDirection: "column" as const }),
-                  gap: 10,
-                  border: "1.5px solid rgba(0,0,0,0.15)",
-                  backdropFilter: "blur(8px)",
-                  WebkitBackdropFilter: "blur(8px)",
-                  background: "rgba(239,239,239,0.45)",
-                  borderRadius: 20,
-                  padding: 20,
-                }}
-              >
-                {tools.map(({ color: toolColor, label }) => (
-                  <div
-                    key={label}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: toolColor,
-                        fontFamily: "var(--font-geist-pixel-square)",
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
-                      {label}
-                    </span>
-                    <div
-                      className="tool-square"
-                      style={{
-                        boxSizing: "border-box",
-                        width: 126,
-                        height: 126,
-                        border: `1.5px solid ${toolColor}`,
-                        borderRadius: 14,
-                        overflow: "hidden",
-                        position: "relative",
-                      }}
-                    >
-                      <svg
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          width: "100%",
-                          height: "100%",
-                        }}
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <defs>
-                          <pattern
-                            id={`diag-${label.replace(/\s/g, "")}`}
-                            width="6"
-                            height="6"
-                            patternUnits="userSpaceOnUse"
-                            patternTransform="rotate(45)"
-                          >
-                            <line
-                              x1="0"
-                              y1="0"
-                              x2="0"
-                              y2="6"
-                              stroke={toolColor}
-                              strokeWidth="1.5"
-                            />
-                          </pattern>
-                        </defs>
-                        <rect
-                          width="100%"
-                          height="100%"
-                          fill={`url(#diag-${label.replace(/\s/g, "")})`}
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <ToolDiagram />
       </div>
 
       <IdeSetup />
@@ -505,7 +202,7 @@ export default async function Home() {
             lineHeight: "28px",
             fontFamily: "var(--font-geist-pixel-square)",
             letterSpacing: "-0.02em",
-            background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+            background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text" as const,
@@ -534,7 +231,7 @@ export default async function Home() {
                 <td
                   style={{
                     padding: "24px 32px 24px 0",
-                    borderBottom: "1px solid rgba(0,0,0,0.06)",
+                    borderBottom: "1px solid var(--table-border)",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -543,7 +240,7 @@ export default async function Home() {
                       fontFamily: "var(--font-geist-pixel-square)",
                       fontSize: 14,
                       fontWeight: 500,
-                      color: "#000",
+                      color: "var(--text-primary)",
                       letterSpacing: "-0.02em",
                     }}
                   >
@@ -553,7 +250,7 @@ export default async function Home() {
                 <td
                   style={{
                     padding: "24px 0",
-                    borderBottom: "1px solid rgba(0,0,0,0.06)",
+                    borderBottom: "1px solid var(--table-border)",
                   }}
                 >
                   <p
@@ -561,7 +258,7 @@ export default async function Home() {
                       fontSize: 14,
                       fontWeight: 300,
                       lineHeight: "22px",
-                      color: "#333",
+                      color: "var(--text-secondary)",
                       marginBottom: 16,
                       fontFamily: "var(--font-geist-sans)",
                     }}
@@ -579,8 +276,8 @@ export default async function Home() {
                         fontSize: 12,
                         fontWeight: 300,
                         lineHeight: "18px",
-                        color: "#444",
-                        background: "rgba(0,0,0,0.04)",
+                        color: "var(--text-secondary)",
+                        background: "var(--code-bg)",
                         backdropFilter: "blur(8px)",
                         WebkitBackdropFilter: "blur(8px)",
                         borderRadius: 8,
@@ -595,7 +292,7 @@ export default async function Home() {
                         style={{
                           fontSize: 10,
                           fontWeight: 500,
-                          color: "#888",
+                          color: "var(--text-secondary)",
                           display: "block",
                           marginBottom: 6,
                           fontFamily: "var(--font-geist-mono)",
@@ -612,8 +309,8 @@ export default async function Home() {
                         fontSize: 12,
                         fontWeight: 300,
                         lineHeight: "18px",
-                        color: "#444",
-                        background: "rgba(0,0,0,0.04)",
+                        color: "var(--text-secondary)",
+                        background: "var(--code-bg)",
                         backdropFilter: "blur(8px)",
                         WebkitBackdropFilter: "blur(8px)",
                         borderRadius: 8,
@@ -628,7 +325,7 @@ export default async function Home() {
                         style={{
                           fontSize: 10,
                           fontWeight: 500,
-                          color: "#888",
+                          color: "var(--text-secondary)",
                           display: "block",
                           marginBottom: 6,
                           fontFamily: "var(--font-geist-mono)",
@@ -657,7 +354,7 @@ export default async function Home() {
           alignItems: "center",
           justifyContent: "center",
           padding: "80px 100px",
-          textShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          textShadow: "0 4px 12px var(--shadow-color)",
         }}
       >
         <p
@@ -669,7 +366,7 @@ export default async function Home() {
             letterSpacing: "-0.05em",
             textAlign: "center",
             maxWidth: 900,
-            background: "linear-gradient(180deg, #000000 0%, #666666 100%)",
+            background: "linear-gradient(180deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text" as const,
@@ -687,7 +384,7 @@ export default async function Home() {
             marginTop: 24,
             fontSize: 16,
             fontWeight: 300,
-            color: "#666",
+            color: "var(--text-secondary)",
             textDecoration: "none",
             fontFamily: "var(--font-geist-pixel-square)",
             letterSpacing: "-0.02em",
@@ -706,15 +403,15 @@ export default async function Home() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderTop: "1.5px solid rgba(0,0,0,0.08)",
-          background: "rgba(239,239,239,0.6)",
+          borderTop: "1.5px solid var(--border-color)",
+          background: "var(--nav-bg)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
         }}
       >
         <span
-          className="font-light text-black"
-          style={{ fontSize: 22, lineHeight: "28px" }}
+          className="font-light"
+          style={{ fontSize: 22, lineHeight: "28px", color: "var(--text-primary)" }}
         >
           Context+
         </span>
@@ -725,7 +422,7 @@ export default async function Home() {
             rel="noopener noreferrer"
             className="flex items-center"
           >
-            <svg width="20" height="20" viewBox="0 0 256 256" fill="#1E1E1E">
+            <svg width="20" height="20" viewBox="0 0 256 256" fill="var(--icon-color)">
               <path d="M0 256V0h256v256H0zm41-41h57.5V71.2H141V215h34V41H41v174z" />
             </svg>
           </a>
@@ -741,7 +438,7 @@ export default async function Home() {
               height="18"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#1E1E1E"
+              stroke="var(--icon-color)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -749,8 +446,8 @@ export default async function Home() {
               <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
             </svg>
             <span
-              className="font-light text-black"
-              style={{ fontSize: 18, lineHeight: "24px" }}
+              className="font-light"
+              style={{ fontSize: 18, lineHeight: "24px", color: "var(--text-primary)" }}
             >
               {stars}
             </span>
