@@ -64,7 +64,7 @@ const MIN_EMBED_BATCH_SIZE = 5;
 const MAX_EMBED_BATCH_SIZE = 10;
 const DEFAULT_EMBED_BATCH_SIZE = 8;
 
-const ollama = new Ollama();
+const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
 
 function toIntegerOr(value: string | undefined, fallback: number): number {
   if (!value) return fallback;

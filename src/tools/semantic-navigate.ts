@@ -32,7 +32,7 @@ const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const CHAT_MODEL = process.env.OLLAMA_CHAT_MODEL ?? "llama3.2";
 const MAX_FILES_PER_LEAF = 20;
 
-const ollama = new Ollama();
+const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
 
 async function fetchEmbeddings(inputs: string[]): Promise<number[][]> {
   return fetchEmbedding(inputs);
