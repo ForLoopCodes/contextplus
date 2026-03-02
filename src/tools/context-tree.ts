@@ -32,40 +32,43 @@ async function buildTree(entries: FileEntry[], _rootDir: string, includeSymbols:
   const dirMap = new Map<string, TreeNode>();
   dirMap.set(".", root);
 
-  const dirs = entries.filter((e) => e.isDirectory).sort((a, b) => a.relativePath.localeCompare(b.relativePath));
-  for (const dir of dirs) {
-    const parts = dir.relativePath.split("/");
-    const parentPath = parts.length > 1 ? parts.slice(0, -1).join("/") : ".";
-    const parent = dirMap.get(parentPath) ?? root;
-    const node: TreeNode = { name: parts[parts.length - 1], relativePath: dir.relativePath, isDirectory: true, children: [] };
-    parent.children.push(node);
-    dirMap.set(dir.relativePath, node);
-  }
+  // Sort by depth then path to ensure parents exist before children
+  const sortedEntries = entries.sort((a, b) => a.depth - b.depth || a.relativePath.localeCompare(b.relativePath));
 
-  const files = entries.filter((e) => !e.isDirectory);
-  for (const file of files) {
-    const parts = file.relativePath.split("/");
+  for (const entry of sortedEntries) {
+    const parts = entry.relativePath.split("/");
     const parentPath = parts.length > 1 ? parts.slice(0, -1).join("/") : ".";
-    const parent = dirMap.get(parentPath) ?? root;
+    
+    // Ensure parent node exists (fallback to root)
+    let parent = dirMap.get(parentPath);
+    if (!parent && parentPath !== ".") {
+      // Auto-create missing parent directories if needed
+      parent = root;
+    } else if (!parent) {
+      parent = root;
+    }
 
     const node: TreeNode = {
       name: parts[parts.length - 1],
-      relativePath: file.relativePath,
-      isDirectory: false,
+      relativePath: entry.relativePath,
+      isDirectory: entry.isDirectory,
       children: [],
     };
 
-    if (isSupportedFile(file.path)) {
+    if (!entry.isDirectory && isSupportedFile(entry.path)) {
       try {
-        const analysis = await analyzeFile(file.path);
+        const analysis = await analyzeFile(entry.path);
         node.header = analysis.header || undefined;
         if (includeSymbols && analysis.symbols.length > 0) {
           node.symbols = analysis.symbols.map((s) => formatSymbol(s, 0)).join("\n");
         }
-      } catch {
-      }
+      } catch {}
     }
+
     parent.children.push(node);
+    if (entry.isDirectory) {
+      dirMap.set(entry.relativePath, node);
+    }
   }
 
   return root;

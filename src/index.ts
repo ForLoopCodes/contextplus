@@ -29,8 +29,9 @@ const AGENT_CONFIG_PATH: Record<AgentTarget, string> = {
   windsurf: ".windsurf/mcp.json",
 };
 
+const SUB_COMMANDS = ["init", "skeleton", "tree"];
 const passthroughArgs = process.argv.slice(2);
-const ROOT_DIR = passthroughArgs[0] && passthroughArgs[0] !== "init"
+const ROOT_DIR = passthroughArgs[0] && !SUB_COMMANDS.includes(passthroughArgs[0])
   ? resolve(passthroughArgs[0])
   : process.cwd();
 
@@ -349,6 +350,15 @@ async function main() {
   const args = process.argv.slice(2);
   if (args[0] === "init") {
     await runInitCommand(args.slice(1));
+    return;
+  }
+  if (args[0] === "skeleton" || args[0] === "tree") {
+    const tree = await getContextTree({
+      rootDir: ROOT_DIR,
+      includeSymbols: true,
+      maxTokens: 50000,
+    });
+    process.stdout.write(tree + "\n");
     return;
   }
   await ensureMcpDataDir(ROOT_DIR);
