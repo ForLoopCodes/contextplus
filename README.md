@@ -106,16 +106,17 @@ Config file locations:
 | VS Code     | `.vscode/mcp.json`   |
 | Windsurf    | `.windsurf/mcp.json` |
 
+### CLI Subcommands
+
+- `init [target]` - Generate MCP configuration (targets: `claude`, `cursor`, `vscode`, `windsurf`).
+- `skeleton [path]` or `tree [path]` - **(New)** View the structural tree of a project with file headers and symbol definitions directly in your terminal.
+- `[path]` - Start the MCP server (stdio) for the specified path (defaults to current directory).
+
 ### From Source
 
 ```bash
 npm install
 npm run build
-```
-
-```bash
-node build/index.js                      # analyze current directory
-node build/index.js /path/to/my-project  # analyze a specific project
 ```
 
 ## Architecture
