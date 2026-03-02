@@ -32,19 +32,13 @@ async function buildTree(entries: FileEntry[], _rootDir: string, includeSymbols:
   const dirMap = new Map<string, TreeNode>();
   dirMap.set(".", root);
 
-  // Sort by depth then path to ensure parents exist before children
   const sortedEntries = entries.sort((a, b) => a.depth - b.depth || a.relativePath.localeCompare(b.relativePath));
 
   for (const entry of sortedEntries) {
     const parts = entry.relativePath.split("/");
     const parentPath = parts.length > 1 ? parts.slice(0, -1).join("/") : ".";
-    
-    // Ensure parent node exists (fallback to root)
     let parent = dirMap.get(parentPath);
-    if (!parent && parentPath !== ".") {
-      // Auto-create missing parent directories if needed
-      parent = root;
-    } else if (!parent) {
+    if (!parent) {
       parent = root;
     }
 

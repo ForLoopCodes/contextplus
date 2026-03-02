@@ -353,8 +353,9 @@ async function main() {
     return;
   }
   if (args[0] === "skeleton" || args[0] === "tree") {
+    const targetRoot = args[1] ? resolve(args[1]) : process.cwd();
     const tree = await getContextTree({
-      rootDir: ROOT_DIR,
+      rootDir: targetRoot,
       includeSymbols: true,
       maxTokens: 50000,
     });
