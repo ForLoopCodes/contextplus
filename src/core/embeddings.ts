@@ -66,6 +66,7 @@ const DEFAULT_EMBED_BATCH_SIZE = 8;
 const MIN_EMBED_INPUT_CHARS = 256;
 const SINGLE_INPUT_SHRINK_FACTOR = 0.75;
 const MAX_SINGLE_INPUT_RETRIES = 8;
+const MAX_EMBED_INPUT_CHARS = 8000; // Conservative limit to avoid Ollama SDK hanging on oversized input
 
 const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
 
@@ -293,7 +294,8 @@ export class SearchIndex {
 
     for (let i = 0; i < docs.length; i++) {
       const doc = docs[i];
-      const text = `${doc.header} ${doc.symbols.join(" ")} ${doc.content}`;
+      const rawText = `${doc.header} ${doc.symbols.join(" ")} ${doc.content}`;
+      const text = rawText.length > MAX_EMBED_INPUT_CHARS ? rawText.slice(0, MAX_EMBED_INPUT_CHARS) : rawText;
       const hash = hashContent(text);
 
       if (cache[doc.path]?.hash === hash) {
