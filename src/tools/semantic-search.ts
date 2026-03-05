@@ -12,7 +12,7 @@ import {
   type SearchDocument,
   type SearchQueryOptions,
 } from "../core/embeddings.js";
-import { readFile } from "fs/promises";
+import { readFile, stat } from "fs/promises";
 import { extname, resolve } from "path";
 
 export interface SemanticSearchOptions {
@@ -34,11 +34,36 @@ let lastIndexTime = 0;
 
 const INDEX_TTL_MS = 60000;
 const SEARCH_CACHE_FILE = "embeddings-cache.json";
-const TEXT_INDEX_EXTENSIONS = new Set([".md", ".txt", ".json", ".jsonc", ".yaml", ".yml", ".toml", ".lock", ".env"]);
+const TEXT_INDEX_EXTENSIONS = new Set([
+  ".md",
+  ".txt",
+  ".json",
+  ".jsonc",
+  ".geojson",
+  ".csv",
+  ".tsv",
+  ".ndjson",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".lock",
+  ".env",
+]);
 const MAX_TEXT_DOC_CHARS = 4000;
+const DEFAULT_MAX_EMBED_FILE_SIZE = 50 * 1024;
 
 function isTextIndexCandidate(filePath: string): boolean {
   return TEXT_INDEX_EXTENSIONS.has(extname(filePath).toLowerCase());
+}
+
+function toIntegerOr(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getMaxEmbedFileSize(): number {
+  return Math.max(1024, toIntegerOr(process.env.CONTEXTPLUS_MAX_EMBED_FILE_SIZE, DEFAULT_MAX_EMBED_FILE_SIZE));
 }
 
 function extractPlainTextHeader(content: string): string {
@@ -67,38 +92,39 @@ async function buildSearchDocumentForFile(rootDir: string, relativePath: string)
   const normalized = normalizeRelativePath(relativePath);
   const fullPath = resolve(rootDir, normalized);
 
-  if (isSupportedFile(fullPath)) {
+  if (isTextIndexCandidate(fullPath)) {
     try {
-      const analysis = await analyzeFile(fullPath);
-      const flatSymbols = flattenSymbols(analysis.symbols);
+      if ((await stat(fullPath)).size > getMaxEmbedFileSize()) return null;
+      const raw = await readFile(fullPath, "utf-8");
+      const content = raw.slice(0, MAX_TEXT_DOC_CHARS);
       return {
         path: normalized,
-        header: analysis.header,
-        symbols: flatSymbols.map((s) => s.name),
-        symbolEntries: flatSymbols.map((s) => ({
-          name: s.name,
-          kind: s.kind,
-          line: s.line,
-          endLine: s.endLine,
-          signature: s.signature,
-        })),
-        content: flatSymbols.map((s) => s.signature).join(" "),
+        header: extractPlainTextHeader(content),
+        symbols: [],
+        content,
       };
     } catch {
       return null;
     }
   }
 
-  if (!isTextIndexCandidate(fullPath)) return null;
+  if (!isSupportedFile(fullPath)) return null;
 
   try {
-    const raw = await readFile(fullPath, "utf-8");
-    const content = raw.slice(0, MAX_TEXT_DOC_CHARS);
+    const analysis = await analyzeFile(fullPath);
+    const flatSymbols = flattenSymbols(analysis.symbols);
     return {
       path: normalized,
-      header: extractPlainTextHeader(content),
-      symbols: [],
-      content,
+      header: analysis.header,
+      symbols: flatSymbols.map((s) => s.name),
+      symbolEntries: flatSymbols.map((s) => ({
+        name: s.name,
+        kind: s.kind,
+        line: s.line,
+        endLine: s.endLine,
+        signature: s.signature,
+      })),
+      content: flatSymbols.map((s) => s.signature).join(" "),
     };
   } catch {
     return null;

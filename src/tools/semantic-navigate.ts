@@ -7,6 +7,7 @@ import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js"
 import { fetchEmbedding } from "../core/embeddings.js";
 import { readFile } from "fs/promises";
 import { spectralCluster, findPathPattern } from "../core/clustering.js";
+import { extname } from "path";
 
 export interface SemanticNavigateOptions {
   rootDir: string;
@@ -31,11 +32,28 @@ interface ClusterNode {
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const CHAT_MODEL = process.env.OLLAMA_CHAT_MODEL ?? "llama3.2";
 const MAX_FILES_PER_LEAF = 20;
+const NON_CODE_NAVIGATE_EXTENSIONS = new Set([
+  ".json",
+  ".jsonc",
+  ".geojson",
+  ".csv",
+  ".tsv",
+  ".ndjson",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".lock",
+  ".env",
+]);
 
 const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
 
 async function fetchEmbeddings(inputs: string[]): Promise<number[][]> {
   return fetchEmbedding(inputs);
+}
+
+function isNavigableSourceCandidate(filePath: string): boolean {
+  return isSupportedFile(filePath) && !NON_CODE_NAVIGATE_EXTENSIONS.has(extname(filePath).toLowerCase());
 }
 
 async function chatCompletion(prompt: string): Promise<string> {
@@ -45,6 +63,30 @@ async function chatCompletion(prompt: string): Promise<string> {
     stream: false,
   });
   return response.message.content;
+}
+
+async function embedFilesWithFallback(files: FileInfo[]): Promise<{ files: FileInfo[]; vectors: number[][]; skipped: number }> {
+  if (files.length === 0) return { files: [], vectors: [], skipped: 0 };
+  const texts = files.map((file) => `${file.header} ${file.relativePath} ${file.content}`);
+
+  try {
+    return { files, vectors: await fetchEmbeddings(texts), skipped: 0 };
+  } catch (error) {
+    const keptFiles: FileInfo[] = [];
+    const vectors: number[][] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const [vector] = await fetchEmbeddings([texts[i]]);
+        keptFiles.push(files[i]);
+        vectors.push(vector);
+      } catch {
+      }
+    }
+
+    if (keptFiles.length === 0) throw error;
+    return { files: keptFiles, vectors, skipped: files.length - keptFiles.length };
+  }
 }
 
 function extractHeader(content: string): string {
@@ -175,7 +217,7 @@ export async function semanticNavigate(options: SemanticNavigateOptions): Promis
   const maxDepth = options.maxDepth ?? 3;
 
   const entries = await walkDirectory({ rootDir: options.rootDir, depthLimit: 0 });
-  const fileEntries = entries.filter((e) => !e.isDirectory && isSupportedFile(e.path));
+  const fileEntries = entries.filter((e) => !e.isDirectory && isNavigableSourceCandidate(e.path));
 
   if (fileEntries.length === 0) return "No supported source files found in the project.";
 
@@ -205,36 +247,48 @@ export async function semanticNavigate(options: SemanticNavigateOptions): Promis
 
   if (files.length === 0) return "Could not read any source files.";
 
-  const embedTexts = files.map((f) => `${f.header} ${f.relativePath} ${f.content}`);
-
-  let vectors: number[][];
+  let embeddableFiles: FileInfo[] = files;
+  let vectors: number[][] = [];
+  let skippedForEmbedding = 0;
   try {
-    vectors = await fetchEmbeddings(embedTexts);
+    const embedded = await embedFilesWithFallback(files);
+    embeddableFiles = embedded.files;
+    vectors = embedded.vectors;
+    skippedForEmbedding = embedded.skipped;
   } catch (err) {
     return `Ollama not available for embeddings: ${err instanceof Error ? err.message : String(err)}\nMake sure Ollama is running or signed in (ollama signin) with model ${EMBED_MODEL}.`;
   }
 
-  if (files.length <= MAX_FILES_PER_LEAF) {
+  if (embeddableFiles.length === 0) return "No embeddable source files found in the project.";
+
+  if (embeddableFiles.length <= MAX_FILES_PER_LEAF) {
     let fileLabels: string[];
     try {
-      const prompt = `For each file below, produce a 3-7 word description. Return ONLY a JSON array of strings.\n\n${files.map((f) => `${f.relativePath}: ${f.header}`).join("\n")}`;
+      const prompt = `For each file below, produce a 3-7 word description. Return ONLY a JSON array of strings.\n\n${embeddableFiles.map((f) => `${f.relativePath}: ${f.header}`).join("\n")}`;
       const response = await chatCompletion(prompt);
       const match = response.match(/\[[\s\S]*\]/);
-      fileLabels = match ? JSON.parse(match[0]) : files.map((f) => f.header);
+      fileLabels = match ? JSON.parse(match[0]) : embeddableFiles.map((f) => f.header);
     } catch {
-      fileLabels = files.map((f) => f.header);
+      fileLabels = embeddableFiles.map((f) => f.header);
     }
 
-    const lines = [`Semantic Navigator: ${files.length} files\n`];
-    for (let i = 0; i < files.length; i++) {
-      const symbols = files[i].symbolPreview.length > 0 ? ` | symbols: ${files[i].symbolPreview.join(", ")}` : "";
-      lines.push(`  ${files[i].relativePath} - ${fileLabels[i] || files[i].header}${symbols}`);
+    const summary = skippedForEmbedding > 0
+      ? `Semantic Navigator: ${embeddableFiles.length} files (${skippedForEmbedding} skipped due embedding limits)\n`
+      : `Semantic Navigator: ${embeddableFiles.length} files\n`;
+    const lines = [summary];
+    for (let i = 0; i < embeddableFiles.length; i++) {
+      const symbols = embeddableFiles[i].symbolPreview.length > 0 ? ` | symbols: ${embeddableFiles[i].symbolPreview.join(", ")}` : "";
+      lines.push(`  ${embeddableFiles[i].relativePath} - ${fileLabels[i] || embeddableFiles[i].header}${symbols}`);
     }
     return lines.join("\n");
   }
 
-  const tree = await buildHierarchy(files, vectors, maxClusters, 0, maxDepth);
+  const tree = await buildHierarchy(embeddableFiles, vectors, maxClusters, 0, maxDepth);
   tree.label = "Project";
 
-  return `Semantic Navigator: ${files.length} files organized by meaning\n\n${renderClusterTree(tree)}`;
+  const summary = skippedForEmbedding > 0
+    ? `Semantic Navigator: ${embeddableFiles.length} files organized by meaning (${skippedForEmbedding} skipped due embedding limits)`
+    : `Semantic Navigator: ${embeddableFiles.length} files organized by meaning`;
+
+  return `${summary}\n\n${renderClusterTree(tree)}`;
 }

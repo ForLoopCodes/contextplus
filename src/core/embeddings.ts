@@ -53,6 +53,15 @@ interface ResolvedSearchQueryOptions {
   requireSemanticMatch: boolean;
 }
 
+interface EmbedRuntimeOptions {
+  num_gpu?: number;
+  main_gpu?: number;
+  num_thread?: number;
+  num_batch?: number;
+  num_ctx?: number;
+  low_vram?: boolean;
+}
+
 export interface EmbeddingCache {
   [path: string]: { hash: string; vector: number[] };
 }
@@ -63,10 +72,12 @@ const CACHE_FILE = "embeddings-cache.json";
 const MIN_EMBED_BATCH_SIZE = 5;
 const MAX_EMBED_BATCH_SIZE = 10;
 const DEFAULT_EMBED_BATCH_SIZE = 8;
-const MIN_EMBED_INPUT_CHARS = 256;
+const MIN_EMBED_INPUT_CHARS = 1;
 const SINGLE_INPUT_SHRINK_FACTOR = 0.75;
-const MAX_SINGLE_INPUT_RETRIES = 8;
-const MAX_EMBED_INPUT_CHARS = 8000; // Conservative limit to avoid Ollama SDK hanging on oversized input
+const MAX_SINGLE_INPUT_RETRIES = 40;
+const MIN_EMBED_CHUNK_CHARS = 256;
+const DEFAULT_EMBED_CHUNK_CHARS = 2000;
+const MAX_EMBED_CHUNK_CHARS = 8000;
 
 const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
 
@@ -76,9 +87,47 @@ function toIntegerOr(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toOptionalInteger(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function toOptionalBoolean(value: string | undefined): boolean | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true" || normalized === "1" || normalized === "yes") return true;
+  if (normalized === "false" || normalized === "0" || normalized === "no") return false;
+  return undefined;
+}
+
+function getEmbedRuntimeOptions(): EmbedRuntimeOptions | undefined {
+  const options: EmbedRuntimeOptions = {
+    num_gpu: toOptionalInteger(process.env.CONTEXTPLUS_EMBED_NUM_GPU),
+    main_gpu: toOptionalInteger(process.env.CONTEXTPLUS_EMBED_MAIN_GPU),
+    num_thread: toOptionalInteger(process.env.CONTEXTPLUS_EMBED_NUM_THREAD),
+    num_batch: toOptionalInteger(process.env.CONTEXTPLUS_EMBED_NUM_BATCH),
+    num_ctx: toOptionalInteger(process.env.CONTEXTPLUS_EMBED_NUM_CTX),
+    low_vram: toOptionalBoolean(process.env.CONTEXTPLUS_EMBED_LOW_VRAM),
+  };
+
+  if (Object.values(options).every((value) => value === undefined)) return undefined;
+  return options;
+}
+
+function buildEmbedRequest(input: string[]): { model: string; input: string[]; options?: EmbedRuntimeOptions } {
+  const options = getEmbedRuntimeOptions();
+  return options ? { model: EMBED_MODEL, input, options } : { model: EMBED_MODEL, input };
+}
+
 export function getEmbeddingBatchSize(): number {
   const requested = toIntegerOr(process.env.CONTEXTPLUS_EMBED_BATCH_SIZE, DEFAULT_EMBED_BATCH_SIZE);
   return Math.min(MAX_EMBED_BATCH_SIZE, Math.max(MIN_EMBED_BATCH_SIZE, requested));
+}
+
+export function getEmbedChunkChars(): number {
+  const requested = toIntegerOr(process.env.CONTEXTPLUS_EMBED_CHUNK_CHARS, DEFAULT_EMBED_CHUNK_CHARS);
+  return Math.min(MAX_EMBED_CHUNK_CHARS, Math.max(MIN_EMBED_CHUNK_CHARS, requested));
 }
 
 function getErrorMessage(error: unknown): string {
@@ -104,7 +153,7 @@ async function embedSingleAdaptive(input: string): Promise<number[]> {
 
   for (let attempt = 0; attempt <= MAX_SINGLE_INPUT_RETRIES; attempt++) {
     try {
-      const response = await ollama.embed({ model: EMBED_MODEL, input: [candidate] });
+      const response = await ollama.embed(buildEmbedRequest([candidate]));
       if (!response.embeddings[0]) throw new Error("Missing embedding vector in Ollama response");
       return response.embeddings[0];
     } catch (error) {
@@ -120,7 +169,7 @@ async function embedSingleAdaptive(input: string): Promise<number[]> {
 
 async function embedBatchAdaptive(batch: string[]): Promise<number[][]> {
   try {
-    const response = await ollama.embed({ model: EMBED_MODEL, input: batch });
+    const response = await ollama.embed(buildEmbedRequest(batch));
     if (response.embeddings.length !== batch.length) {
       throw new Error(`Embedding response size mismatch: expected ${batch.length}, got ${response.embeddings.length}`);
     }
@@ -137,16 +186,62 @@ async function embedBatchAdaptive(batch: string[]): Promise<number[][]> {
   }
 }
 
+function splitEmbeddingInput(input: string): string[] {
+  const chunkChars = getEmbedChunkChars();
+  if (input.length <= chunkChars) return [input];
+  const chunks: string[] = [];
+  for (let start = 0; start < input.length; start += chunkChars) {
+    chunks.push(input.slice(start, start + chunkChars));
+  }
+  return chunks;
+}
+
+function mergeEmbeddingVectors(vectors: number[][], weights: number[]): number[] {
+  if (vectors.length === 0) throw new Error("Cannot merge empty embedding vectors");
+  if (vectors.length === 1) return vectors[0];
+
+  const dimension = vectors[0].length;
+  const merged = new Array<number>(dimension).fill(0);
+  let totalWeight = 0;
+
+  for (let i = 0; i < vectors.length; i++) {
+    const vector = vectors[i];
+    if (vector.length !== dimension) {
+      throw new Error(`Embedding dimension mismatch: expected ${dimension}, got ${vector.length}`);
+    }
+    const weight = Math.max(1, weights[i] ?? 1);
+    totalWeight += weight;
+    for (let d = 0; d < dimension; d++) merged[d] += vector[d] * weight;
+  }
+
+  if (totalWeight <= 0) return vectors[0];
+  for (let d = 0; d < merged.length; d++) merged[d] /= totalWeight;
+  return merged;
+}
+
 export async function fetchEmbedding(input: string | string[]): Promise<number[][]> {
   const inputs = Array.isArray(input) ? input : [input];
   if (inputs.length === 0) return [];
 
+  const chunkedInputs = inputs.map(splitEmbeddingInput);
+  const flattenedInputs = chunkedInputs.flat();
   const batchSize = getEmbeddingBatchSize();
-  const embeddings: number[][] = [];
+  const flattenedEmbeddings: number[][] = [];
 
-  for (let i = 0; i < inputs.length; i += batchSize) {
-    const batch = inputs.slice(i, i + batchSize);
-    embeddings.push(...await embedBatchAdaptive(batch));
+  for (let i = 0; i < flattenedInputs.length; i += batchSize) {
+    const batch = flattenedInputs.slice(i, i + batchSize);
+    flattenedEmbeddings.push(...await embedBatchAdaptive(batch));
+  }
+
+  const embeddings: number[][] = [];
+  let offset = 0;
+  for (const chunks of chunkedInputs) {
+    const vectors = flattenedEmbeddings.slice(offset, offset + chunks.length);
+    if (vectors.length !== chunks.length) {
+      throw new Error(`Merged embedding size mismatch: expected ${chunks.length}, got ${vectors.length}`);
+    }
+    embeddings.push(mergeEmbeddingVectors(vectors, chunks.map((chunk) => chunk.length)));
+    offset += chunks.length;
   }
 
   return embeddings;
@@ -295,13 +390,12 @@ export class SearchIndex {
     for (let i = 0; i < docs.length; i++) {
       const doc = docs[i];
       const rawText = `${doc.header} ${doc.symbols.join(" ")} ${doc.content}`;
-      const text = rawText.length > MAX_EMBED_INPUT_CHARS ? rawText.slice(0, MAX_EMBED_INPUT_CHARS) : rawText;
-      const hash = hashContent(text);
+      const hash = hashContent(rawText);
 
       if (cache[doc.path]?.hash === hash) {
         this.vectors[i] = cache[doc.path].vector;
       } else {
-        uncached.push({ idx: i, text, hash });
+        uncached.push({ idx: i, text: rawText, hash });
       }
     }
 
@@ -309,10 +403,24 @@ export class SearchIndex {
       const batchSize = getEmbeddingBatchSize();
       for (let b = 0; b < uncached.length; b += batchSize) {
         const batch = uncached.slice(b, b + batchSize);
-        const embeddings = await fetchEmbedding(batch.map((u) => u.text));
-        for (let j = 0; j < batch.length; j++) {
-          this.vectors[batch[j].idx] = embeddings[j];
-          cache[docs[batch[j].idx].path] = { hash: batch[j].hash, vector: embeddings[j] };
+        try {
+          const embeddings = await fetchEmbedding(batch.map((u) => u.text));
+          for (let j = 0; j < batch.length; j++) {
+            this.vectors[batch[j].idx] = embeddings[j];
+            cache[docs[batch[j].idx].path] = { hash: batch[j].hash, vector: embeddings[j] };
+          }
+        } catch (error) {
+          if (!isContextLengthError(error)) throw error;
+          for (const item of batch) {
+            try {
+              const [vector] = await fetchEmbedding(item.text);
+              this.vectors[item.idx] = vector;
+              cache[docs[item.idx].path] = { hash: item.hash, vector };
+            } catch (itemError) {
+              if (!isContextLengthError(itemError)) throw itemError;
+              delete cache[docs[item.idx].path];
+            }
+          }
         }
       }
       await saveCache(rootDir, cache);

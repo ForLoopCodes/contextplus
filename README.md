@@ -152,6 +152,14 @@ Three layers built with TypeScript over stdio using the Model Context Protocol S
 | `OLLAMA_API_KEY`                        | -                  | Ollama Cloud API key                                          |
 | `OLLAMA_CHAT_MODEL`                     | `llama3.2`         | Chat model for cluster labeling                               |
 | `CONTEXTPLUS_EMBED_BATCH_SIZE`          | `8`                | Embedding batch size per GPU call, clamped to 5-10            |
+| `CONTEXTPLUS_EMBED_CHUNK_CHARS`         | `2000`             | Per-chunk chars before merge, clamped to 256-8000             |
+| `CONTEXTPLUS_MAX_EMBED_FILE_SIZE`       | `51200`            | Skip non-code text files larger than this many bytes          |
+| `CONTEXTPLUS_EMBED_NUM_GPU`             | -                  | Optional Ollama embed runtime `num_gpu` override              |
+| `CONTEXTPLUS_EMBED_MAIN_GPU`            | -                  | Optional Ollama embed runtime `main_gpu` override             |
+| `CONTEXTPLUS_EMBED_NUM_THREAD`          | -                  | Optional Ollama embed runtime `num_thread` override           |
+| `CONTEXTPLUS_EMBED_NUM_BATCH`           | -                  | Optional Ollama embed runtime `num_batch` override            |
+| `CONTEXTPLUS_EMBED_NUM_CTX`             | -                  | Optional Ollama embed runtime `num_ctx` override              |
+| `CONTEXTPLUS_EMBED_LOW_VRAM`            | -                  | Optional Ollama embed runtime `low_vram` override             |
 | `CONTEXTPLUS_EMBED_TRACKER`             | `true`             | Enable realtime embedding refresh on file changes             |
 | `CONTEXTPLUS_EMBED_TRACKER_MAX_FILES`   | `8`                | Max changed files processed per tracker tick, clamped to 5-10 |
 | `CONTEXTPLUS_EMBED_TRACKER_DEBOUNCE_MS` | `700`              | Debounce window before tracker refresh                        |
