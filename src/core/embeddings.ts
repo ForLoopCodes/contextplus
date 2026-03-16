@@ -1,5 +1,6 @@
-// Ollama-powered vector embedding engine with cosine similarity search
+// Vector embedding engine with Ollama (local) and OpenAI-compatible (OpenRouter) backends
 // Indexes file headers and symbols, caches embeddings to disk for speed
+// Provider selection: OPENROUTER_API_KEY -> OpenRouter, else -> Ollama
 
 import { Ollama } from "ollama";
 import { readFile, writeFile, mkdir } from "fs/promises";
@@ -74,7 +75,15 @@ export interface EmbeddingCache {
   [path: string]: { hash: string; vector: number[] };
 }
 
-const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
+interface EmbeddingCacheV2 {
+  version: 2;
+  model: string;
+  dimensions: number;
+  entries: EmbeddingCache;
+}
+
+const OLLAMA_EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
+const OPENROUTER_EMBED_MODEL = process.env.OPENROUTER_EMBED_MODEL ?? "openai/text-embedding-3-small";
 const CACHE_DIR = ".mcp_data";
 const CACHE_FILE = "embeddings-cache.json";
 const MIN_EMBED_BATCH_SIZE = 5;
@@ -87,7 +96,59 @@ const MIN_EMBED_CHUNK_CHARS = 256;
 const DEFAULT_EMBED_CHUNK_CHARS = 2000;
 const MAX_EMBED_CHUNK_CHARS = 8000;
 
+// Backward compat: EMBED_MODEL reads from OLLAMA_EMBED_MODEL when provider is ollama
+const EMBED_MODEL = OLLAMA_EMBED_MODEL;
+
+// --- Provider selection (Section 1.3 of spec) ---
+type EmbedProvider = "auto" | "ollama" | "openrouter";
+
+function resolveProvider(): "ollama" | "openrouter" {
+  const override = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "auto") as EmbedProvider;
+  if (override === "ollama") return "ollama";
+  if (override === "openrouter") {
+    if (!process.env.OPENROUTER_API_KEY) throw new Error("CONTEXTPLUS_EMBED_PROVIDER=openrouter but OPENROUTER_API_KEY is not set");
+    return "openrouter";
+  }
+  // auto: prefer OpenRouter if key available
+  if (process.env.OPENROUTER_API_KEY) return "openrouter";
+  return "ollama";
+}
+
+let _cachedProvider: "ollama" | "openrouter" | undefined;
+function getProvider(): "ollama" | "openrouter" {
+  if (!_cachedProvider) _cachedProvider = resolveProvider();
+  return _cachedProvider;
+}
+
+function currentModelName(): string {
+  return getProvider() === "openrouter" ? OPENROUTER_EMBED_MODEL : OLLAMA_EMBED_MODEL;
+}
+
 const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
+
+// --- OpenAI-compatible embeddings via OpenRouter ---
+async function openRouterEmbed(input: string[], signal: AbortSignal): Promise<{ embeddings: number[][] }> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is required for OpenRouter embeddings");
+
+  const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model: OPENROUTER_EMBED_MODEL, input }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`OpenRouter embeddings API returned ${response.status}: ${body.slice(0, 200)}`);
+  }
+
+  const data = await response.json() as { data: Array<{ embedding: number[] }> };
+  return { embeddings: data.data.map((d) => d.embedding) };
+}
 
 function toIntegerOr(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
@@ -131,6 +192,10 @@ function buildEmbedRequest(input: string[]): { model: string; input: string[]; o
 async function embedWithTimeout(request: ReturnType<typeof buildEmbedRequest>): Promise<{ embeddings: number[][] }> {
   const timeoutCtrl = AbortSignal.timeout(EMBED_TIMEOUT_MS);
   const signal = AbortSignal.any([embedAbortController.signal, timeoutCtrl]);
+
+  if (getProvider() === "openrouter") {
+    return openRouterEmbed(request.input, signal);
+  }
   return ollama.embed({ ...request, signal } as Parameters<typeof ollama.embed>[0]);
 }
 
@@ -357,20 +422,30 @@ function computeCombinedScore(semanticScore: number, keywordScore: number, optio
 }
 
 async function loadCache(rootDir: string): Promise<EmbeddingCache> {
-  return loadEmbeddingCache(rootDir, CACHE_FILE);
+  return loadEmbeddingCache(rootDir, CACHE_FILE, currentModelName());
 }
 
-async function saveCache(rootDir: string, cache: EmbeddingCache): Promise<void> {
-  await saveEmbeddingCache(rootDir, cache, CACHE_FILE);
+async function saveCache(rootDir: string, cache: EmbeddingCache, dimensions: number): Promise<void> {
+  await saveEmbeddingCacheV2(rootDir, cache, CACHE_FILE, currentModelName(), dimensions);
 }
 
 export async function ensureMcpDataDir(rootDir: string): Promise<void> {
   await mkdir(join(rootDir, CACHE_DIR), { recursive: true });
 }
 
-export async function loadEmbeddingCache(rootDir: string, fileName: string): Promise<EmbeddingCache> {
+export async function loadEmbeddingCache(rootDir: string, fileName: string, expectedModel?: string): Promise<EmbeddingCache> {
   try {
-    return JSON.parse(await readFile(join(rootDir, CACHE_DIR, fileName), "utf-8"));
+    const raw = JSON.parse(await readFile(join(rootDir, CACHE_DIR, fileName), "utf-8"));
+    // V2 format with model tracking
+    if (raw && typeof raw === "object" && raw.version === 2 && raw.entries) {
+      if (expectedModel && raw.model !== expectedModel) return {};
+      if (expectedModel && raw.dimensions && typeof raw.dimensions === "number") {
+        // dimensions will be validated against first live embedding
+      }
+      return raw.entries as EmbeddingCache;
+    }
+    // V1 format (plain cache object)
+    return raw as EmbeddingCache;
   } catch {
     return {};
   }
@@ -379,6 +454,20 @@ export async function loadEmbeddingCache(rootDir: string, fileName: string): Pro
 export async function saveEmbeddingCache(rootDir: string, cache: EmbeddingCache, fileName: string): Promise<void> {
   await ensureMcpDataDir(rootDir);
   await writeFile(join(rootDir, CACHE_DIR, fileName), JSON.stringify(cache));
+}
+
+async function saveEmbeddingCacheV2(rootDir: string, cache: EmbeddingCache, fileName: string, model: string, dimensions: number): Promise<void> {
+  await ensureMcpDataDir(rootDir);
+  const v2: EmbeddingCacheV2 = { version: 2, model, dimensions, entries: cache };
+  await writeFile(join(rootDir, CACHE_DIR, fileName), JSON.stringify(v2));
+}
+
+export function getActiveModel(): string {
+  return currentModelName();
+}
+
+export function getActiveProvider(): string {
+  return getProvider();
 }
 
 function formatLineRange(line: number, endLine?: number): string {
@@ -414,20 +503,27 @@ export class SearchIndex {
     }
 
     if (uncached.length > 0) {
+      let activeDimensions = 0;
       const batchSize = getEmbeddingBatchSize();
       for (let b = 0; b < uncached.length; b += batchSize) {
         const batch = uncached.slice(b, b + batchSize);
         try {
           const embeddings = await fetchEmbedding(batch.map((u) => u.text));
           for (let j = 0; j < batch.length; j++) {
-            this.vectors[batch[j].idx] = embeddings[j];
-            cache[docs[batch[j].idx].path] = { hash: batch[j].hash, vector: embeddings[j] };
+            const vec = embeddings[j];
+            if (activeDimensions === 0) activeDimensions = vec.length;
+            if (vec.length !== activeDimensions) {
+              throw new Error(`Embedding dimension mismatch: expected ${activeDimensions}, got ${vec.length}`);
+            }
+            this.vectors[batch[j].idx] = vec;
+            cache[docs[batch[j].idx].path] = { hash: batch[j].hash, vector: vec };
           }
         } catch (error) {
           if (!isContextLengthError(error)) throw error;
           for (const item of batch) {
             try {
               const [vector] = await fetchEmbedding(item.text);
+              if (activeDimensions === 0) activeDimensions = vector.length;
               this.vectors[item.idx] = vector;
               cache[docs[item.idx].path] = { hash: item.hash, vector };
             } catch (itemError) {
@@ -437,7 +533,7 @@ export class SearchIndex {
           }
         }
       }
-      await saveCache(rootDir, cache);
+      await saveCache(rootDir, cache, activeDimensions);
     }
   }
 
