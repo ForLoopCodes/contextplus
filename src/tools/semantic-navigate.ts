@@ -1,7 +1,6 @@
-// Semantic project navigator using spectral clustering and Ollama labeling
+// Semantic project navigator using spectral clustering and provider-agnostic labeling
 // Browse codebase by meaning: embeds files, clusters vectors, generates labels
 
-import { Ollama } from "ollama";
 import { walkDirectory } from "../core/walker.js";
 import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js";
 import { fetchEmbedding } from "../core/embeddings.js";
@@ -29,8 +28,11 @@ interface ClusterNode {
   children: ClusterNode[];
 }
 
-const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
+const EMBED_PROVIDER = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "ollama").toLowerCase();
 const CHAT_MODEL = process.env.OLLAMA_CHAT_MODEL ?? "llama3.2";
+const OPENAI_CHAT_MODEL = process.env.CONTEXTPLUS_OPENAI_CHAT_MODEL ?? process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini";
+const OPENAI_API_KEY = process.env.CONTEXTPLUS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? "";
+const OPENAI_BASE_URL = process.env.CONTEXTPLUS_OPENAI_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
 const MAX_FILES_PER_LEAF = 20;
 const NON_CODE_NAVIGATE_EXTENSIONS = new Set([
   ".json",
@@ -46,7 +48,16 @@ const NON_CODE_NAVIGATE_EXTENSIONS = new Set([
   ".env",
 ]);
 
-const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
+type OllamaChatClient = { chat: (params: Record<string, unknown>) => Promise<{ message: { content: string } }> };
+let ollamaClient: OllamaChatClient | null = null;
+
+async function getOllamaClient(): Promise<OllamaChatClient> {
+  if (!ollamaClient) {
+    const { Ollama } = await import("ollama");
+    ollamaClient = new Ollama({ host: process.env.OLLAMA_HOST }) as unknown as OllamaChatClient;
+  }
+  return ollamaClient;
+}
 
 async function fetchEmbeddings(inputs: string[]): Promise<number[][]> {
   return fetchEmbedding(inputs);
@@ -57,7 +68,32 @@ function isNavigableSourceCandidate(filePath: string): boolean {
 }
 
 async function chatCompletion(prompt: string): Promise<string> {
-  const response = await ollama.chat({
+  if (EMBED_PROVIDER === "openai") {
+    const url = `${OPENAI_BASE_URL.replace(/\/+$/, "")}/chat/completions`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_CHAT_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`OpenAI chat API error ${response.status}: ${body}`);
+    }
+
+    const data = await response.json() as { choices: { message: { content: string } }[] };
+    return data.choices[0]?.message?.content ?? "";
+  }
+
+  const client = await getOllamaClient();
+  const response = await client.chat({
     model: CHAT_MODEL,
     messages: [{ role: "user", content: prompt }],
     stream: false,
@@ -123,7 +159,7 @@ async function labelSiblingClusters(clusters: { files: FileInfo[]; pathPattern: 
 
   const prompt = `You are labeling clusters of code files. For each cluster below, produce EXACTLY one JSON array of objects, each with:
 - "overarchingTheme": a sentence about the cluster's theme
-- "distinguishingFeature": what makes this cluster unique vs siblings  
+- "distinguishingFeature": what makes this cluster unique vs siblings
 - "label": EXACTLY 2 words describing the cluster
 
 ${clusterDescriptions.join("\n\n")}
@@ -256,7 +292,10 @@ export async function semanticNavigate(options: SemanticNavigateOptions): Promis
     vectors = embedded.vectors;
     skippedForEmbedding = embedded.skipped;
   } catch (err) {
-    return `Ollama not available for embeddings: ${err instanceof Error ? err.message : String(err)}\nMake sure Ollama is running or signed in (ollama signin) with model ${EMBED_MODEL}.`;
+    const providerHint = EMBED_PROVIDER === "openai"
+      ? `Check CONTEXTPLUS_OPENAI_API_KEY and CONTEXTPLUS_OPENAI_BASE_URL.`
+      : `Make sure Ollama is running with model ${CHAT_MODEL}.`;
+    return `Embedding provider (${EMBED_PROVIDER}) not available: ${err instanceof Error ? err.message : String(err)}\n${providerHint}`;
   }
 
   if (embeddableFiles.length === 0) return "No embeddable source files found in the project.";

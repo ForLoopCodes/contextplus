@@ -1,7 +1,7 @@
-// Ollama-powered vector embedding engine with cosine similarity search
+// Multi-provider vector embedding engine with cosine similarity search
+// Supports Ollama (local) and OpenAI-compatible APIs (Gemini, OpenAI, etc.)
 // Indexes file headers and symbols, caches embeddings to disk for speed
 
-import { Ollama } from "ollama";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
@@ -74,7 +74,11 @@ export interface EmbeddingCache {
   [path: string]: { hash: string; vector: number[] };
 }
 
+const EMBED_PROVIDER = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "ollama").toLowerCase();
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
+const OPENAI_EMBED_MODEL = process.env.CONTEXTPLUS_OPENAI_EMBED_MODEL ?? process.env.OPENAI_EMBED_MODEL ?? "text-embedding-3-small";
+const OPENAI_API_KEY = process.env.CONTEXTPLUS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? "";
+const OPENAI_BASE_URL = process.env.CONTEXTPLUS_OPENAI_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
 const CACHE_DIR = ".mcp_data";
 const CACHE_FILE = "embeddings-cache.json";
 const MIN_EMBED_BATCH_SIZE = 5;
@@ -87,7 +91,53 @@ const MIN_EMBED_CHUNK_CHARS = 256;
 const DEFAULT_EMBED_CHUNK_CHARS = 2000;
 const MAX_EMBED_CHUNK_CHARS = 8000;
 
-const ollama = new Ollama({ host: process.env.OLLAMA_HOST });
+type OllamaEmbedClient = { embed: (params: Record<string, unknown>) => Promise<{ embeddings: number[][] }> };
+let ollamaClient: OllamaEmbedClient | null = null;
+
+async function getOllamaClient(): Promise<OllamaEmbedClient> {
+  if (!ollamaClient) {
+    const { Ollama } = await import("ollama");
+    ollamaClient = new Ollama({ host: process.env.OLLAMA_HOST }) as unknown as OllamaEmbedClient;
+  }
+  return ollamaClient;
+}
+
+async function callOllamaEmbed(input: string[], signal: AbortSignal): Promise<number[][]> {
+  const client = await getOllamaClient();
+  const options = getEmbedRuntimeOptions();
+  const request: Record<string, unknown> = { model: EMBED_MODEL, input, signal };
+  if (options) request.options = options;
+  const response = await client.embed(request);
+  return response.embeddings;
+}
+
+async function callOpenAIEmbed(input: string[], signal: AbortSignal): Promise<number[][]> {
+  const url = `${OPENAI_BASE_URL.replace(/\/+$/, "")}/embeddings`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({ model: OPENAI_EMBED_MODEL, input }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`OpenAI embed API error ${response.status}: ${body}`);
+  }
+
+  const data = await response.json() as { data: { embedding: number[] }[] };
+  return data.data.map((item) => item.embedding);
+}
+
+async function callProviderEmbed(input: string[], signal: AbortSignal): Promise<number[][]> {
+  if (EMBED_PROVIDER === "openai") {
+    return callOpenAIEmbed(input, signal);
+  }
+  return callOllamaEmbed(input, signal);
+}
 
 function toIntegerOr(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
@@ -110,6 +160,7 @@ function toOptionalBoolean(value: string | undefined): boolean | undefined {
 }
 
 function getEmbedRuntimeOptions(): EmbedRuntimeOptions | undefined {
+  if (EMBED_PROVIDER === "openai") return undefined;
   const options: EmbedRuntimeOptions = {
     num_gpu: toOptionalInteger(process.env.CONTEXTPLUS_EMBED_NUM_GPU),
     main_gpu: toOptionalInteger(process.env.CONTEXTPLUS_EMBED_MAIN_GPU),
@@ -121,17 +172,6 @@ function getEmbedRuntimeOptions(): EmbedRuntimeOptions | undefined {
 
   if (Object.values(options).every((value) => value === undefined)) return undefined;
   return options;
-}
-
-function buildEmbedRequest(input: string[]): { model: string; input: string[]; options?: EmbedRuntimeOptions } {
-  const options = getEmbedRuntimeOptions();
-  return options ? { model: EMBED_MODEL, input, options } : { model: EMBED_MODEL, input };
-}
-
-async function embedWithTimeout(request: ReturnType<typeof buildEmbedRequest>): Promise<{ embeddings: number[][] }> {
-  const timeoutCtrl = AbortSignal.timeout(EMBED_TIMEOUT_MS);
-  const signal = AbortSignal.any([embedAbortController.signal, timeoutCtrl]);
-  return ollama.embed({ ...request, signal } as Parameters<typeof ollama.embed>[0]);
 }
 
 export function getEmbeddingBatchSize(): number {
@@ -152,7 +192,8 @@ function getErrorMessage(error: unknown): string {
 function isContextLengthError(error: unknown): boolean {
   const message = getErrorMessage(error).toLowerCase();
   return message.includes("input length exceeds context length")
-    || (message.includes("context") && message.includes("exceed"));
+    || (message.includes("context") && message.includes("exceed"))
+    || message.includes("maximum context length");
 }
 
 function shrinkEmbeddingInput(input: string): string {
@@ -167,9 +208,11 @@ async function embedSingleAdaptive(input: string): Promise<number[]> {
 
   for (let attempt = 0; attempt <= MAX_SINGLE_INPUT_RETRIES; attempt++) {
     try {
-      const response = await embedWithTimeout(buildEmbedRequest([candidate]));
-      if (!response.embeddings[0]) throw new Error("Missing embedding vector in Ollama response");
-      return response.embeddings[0];
+      const timeoutCtrl = AbortSignal.timeout(EMBED_TIMEOUT_MS);
+      const signal = AbortSignal.any([embedAbortController.signal, timeoutCtrl]);
+      const embeddings = await callProviderEmbed([candidate], signal);
+      if (!embeddings[0]) throw new Error("Missing embedding vector in response");
+      return embeddings[0];
     } catch (error) {
       if (!isContextLengthError(error)) throw error;
       const nextCandidate = shrinkEmbeddingInput(candidate);
@@ -183,11 +226,13 @@ async function embedSingleAdaptive(input: string): Promise<number[]> {
 
 async function embedBatchAdaptive(batch: string[]): Promise<number[][]> {
   try {
-    const response = await embedWithTimeout(buildEmbedRequest(batch));
-    if (response.embeddings.length !== batch.length) {
-      throw new Error(`Embedding response size mismatch: expected ${batch.length}, got ${response.embeddings.length}`);
+    const timeoutCtrl = AbortSignal.timeout(EMBED_TIMEOUT_MS);
+    const signal = AbortSignal.any([embedAbortController.signal, timeoutCtrl]);
+    const embeddings = await callProviderEmbed(batch, signal);
+    if (embeddings.length !== batch.length) {
+      throw new Error(`Embedding response size mismatch: expected ${batch.length}, got ${embeddings.length}`);
     }
-    return response.embeddings;
+    return embeddings;
   } catch (error) {
     if (!isContextLengthError(error)) throw error;
     if (batch.length === 1) {
