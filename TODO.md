@@ -61,3 +61,4 @@ new features:
 - [ ] faster tool execution and cleaner outputs and better error handling and reporting with suggestions like "this tool failed, you can do this instead, it will work the same"
 - [ ] better treesitter support and tools for using it to understand code structure and semantics better
 - [ ] add these features to be visualized in the cli
+- [ ] add researchplus tools and features
