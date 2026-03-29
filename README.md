@@ -132,6 +132,90 @@ npm install
 npm run build
 ```
 
+## Embedding Providers
+
+Context+ supports two embedding backends controlled by `CONTEXTPLUS_EMBED_PROVIDER`:
+
+| Provider | Value | Requires | Best For |
+|----------|-------|----------|----------|
+| **Ollama** (default) | `ollama` | Local Ollama server | Free, offline, private |
+| **OpenAI-compatible** | `openai` | API key | Gemini (free tier), OpenAI, Groq, vLLM |
+
+### Ollama (Default)
+
+No extra configuration needed. Just run Ollama with an embedding model:
+
+```bash
+ollama pull nomic-embed-text
+ollama serve
+```
+
+### Google Gemini (Free Tier)
+
+Full Claude Code `.mcp.json` example:
+
+```json
+{
+  "mcpServers": {
+    "contextplus": {
+      "command": "npx",
+      "args": ["-y", "contextplus"],
+      "env": {
+        "CONTEXTPLUS_EMBED_PROVIDER": "openai",
+        "CONTEXTPLUS_OPENAI_API_KEY": "YOUR_GEMINI_API_KEY",
+        "CONTEXTPLUS_OPENAI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "CONTEXTPLUS_OPENAI_EMBED_MODEL": "text-embedding-004"
+      }
+    }
+  }
+}
+```
+
+Get a free API key at [Google AI Studio](https://aistudio.google.com/apikey).
+
+### OpenAI
+
+```json
+{
+  "mcpServers": {
+    "contextplus": {
+      "command": "npx",
+      "args": ["-y", "contextplus"],
+      "env": {
+        "CONTEXTPLUS_EMBED_PROVIDER": "openai",
+        "OPENAI_API_KEY": "sk-...",
+        "OPENAI_EMBED_MODEL": "text-embedding-3-small"
+      }
+    }
+  }
+}
+```
+
+### Other OpenAI-compatible APIs (Groq, vLLM, LiteLLM)
+
+Any endpoint implementing the [OpenAI Embeddings API](https://platform.openai.com/docs/api-reference/embeddings) works:
+
+```json
+{
+  "mcpServers": {
+    "contextplus": {
+      "command": "npx",
+      "args": ["-y", "contextplus"],
+      "env": {
+        "CONTEXTPLUS_EMBED_PROVIDER": "openai",
+        "CONTEXTPLUS_OPENAI_API_KEY": "YOUR_KEY",
+        "CONTEXTPLUS_OPENAI_BASE_URL": "https://your-proxy.example.com/v1",
+        "CONTEXTPLUS_OPENAI_EMBED_MODEL": "your-model-name"
+      }
+    }
+  }
+}
+```
+
+> **Note:** The `semantic_navigate` tool also uses a chat model for cluster labeling. When using the `openai` provider, set `CONTEXTPLUS_OPENAI_CHAT_MODEL` (default: `gpt-4o-mini`).
+>
+> For VS Code, Cursor, or OpenCode, use the same `env` block inside your IDE's MCP config format (see [Config file locations](#setup) table above).
+
 ## Architecture
 
 Three layers built with TypeScript over stdio using the Model Context Protocol SDK:
@@ -146,11 +230,16 @@ Three layers built with TypeScript over stdio using the Model Context Protocol S
 
 ## Config
 
-| Variable                                | Type                      | Default            | Description                                                   |
-| --------------------------------------- | ------------------------- | ------------------ | ------------------------------------------------------------- |
-| `OLLAMA_EMBED_MODEL`                    | string                    | `nomic-embed-text` | Embedding model                                               |
-| `OLLAMA_API_KEY`                        | string                    | -                  | Ollama Cloud API key                                          |
-| `OLLAMA_CHAT_MODEL`                     | string                    | `llama3.2`         | Chat model for cluster labeling                               |
+| Variable                                | Type                      | Default                                | Description                                                   |
+| --------------------------------------- | ------------------------- | -------------------------------------- | ------------------------------------------------------------- |
+| `CONTEXTPLUS_EMBED_PROVIDER`            | string                    | `ollama`                               | Embedding backend: `ollama` or `openai`                      |
+| `OLLAMA_EMBED_MODEL`                    | string                    | `nomic-embed-text`                     | Ollama embedding model                                        |
+| `OLLAMA_API_KEY`                        | string                    | -                                      | Ollama Cloud API key                                          |
+| `OLLAMA_CHAT_MODEL`                     | string                    | `llama3.2`                             | Ollama chat model for cluster labeling                        |
+| `CONTEXTPLUS_OPENAI_API_KEY`            | string                    | -                                      | API key for OpenAI-compatible provider (alias: `OPENAI_API_KEY`) |
+| `CONTEXTPLUS_OPENAI_BASE_URL`           | string                    | `https://api.openai.com/v1`            | OpenAI-compatible endpoint URL (alias: `OPENAI_BASE_URL`)    |
+| `CONTEXTPLUS_OPENAI_EMBED_MODEL`        | string                    | `text-embedding-3-small`               | OpenAI-compatible embedding model (alias: `OPENAI_EMBED_MODEL`) |
+| `CONTEXTPLUS_OPENAI_CHAT_MODEL`         | string                    | `gpt-4o-mini`                          | OpenAI-compatible chat model for labeling (alias: `OPENAI_CHAT_MODEL`) |
 | `CONTEXTPLUS_EMBED_BATCH_SIZE`          | string (parsed as number) | `8`                | Embedding batch size per GPU call, clamped to 5-10            |
 | `CONTEXTPLUS_EMBED_CHUNK_CHARS`         | string (parsed as number) | `2000`             | Per-chunk chars before merge, clamped to 256-8000             |
 | `CONTEXTPLUS_MAX_EMBED_FILE_SIZE`       | string (parsed as number) | `51200`            | Skip non-code text files larger than this many bytes          |
