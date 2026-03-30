@@ -3,7 +3,7 @@
 
 import { simpleGit, type SimpleGit } from "simple-git";
 import { readFile, writeFile, mkdir } from "fs/promises";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
 
 const SHADOW_BRANCH = "mcp-shadow-history";
 const DATA_DIR = ".mcp_data";
@@ -13,6 +13,15 @@ export interface RestorePoint {
   timestamp: number;
   files: string[];
   message: string;
+}
+
+function assertWithinRoot(rootDir: string, filePath: string): string {
+  const resolved = resolve(rootDir, filePath);
+  const normalizedRoot = resolve(rootDir) + "/";
+  if (!resolved.startsWith(normalizedRoot) && resolved !== resolve(rootDir)) {
+    throw new Error(`Path traversal denied: "${filePath}" resolves outside root directory`);
+  }
+  return resolved;
 }
 
 async function ensureDataDir(rootDir: string): Promise<string> {
@@ -36,13 +45,14 @@ async function saveManifest(rootDir: string, points: RestorePoint[]): Promise<vo
 }
 
 export async function createRestorePoint(rootDir: string, files: string[], message: string): Promise<RestorePoint> {
-  const dataPath = await ensureDataDir(rootDir);
+  const normalizedRoot = resolve(rootDir);
+  const dataPath = await ensureDataDir(normalizedRoot);
   const id = `rp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const backupDir = join(dataPath, "backups", id);
   await mkdir(backupDir, { recursive: true });
 
   for (const file of files) {
-    const fullPath = join(rootDir, file);
+    const fullPath = assertWithinRoot(normalizedRoot, file);
     try {
       const content = await readFile(fullPath, "utf-8");
       const backupPath = join(backupDir, file.replace(/[\\/]/g, "__"));
@@ -52,27 +62,28 @@ export async function createRestorePoint(rootDir: string, files: string[], messa
   }
 
   const point: RestorePoint = { id, timestamp: Date.now(), files, message };
-  const manifest = await loadManifest(rootDir);
+  const manifest = await loadManifest(normalizedRoot);
   manifest.push(point);
   if (manifest.length > 100) manifest.splice(0, manifest.length - 100);
-  await saveManifest(rootDir, manifest);
+  await saveManifest(normalizedRoot, manifest);
 
   return point;
 }
 
 export async function restorePoint(rootDir: string, pointId: string): Promise<string[]> {
-  const manifest = await loadManifest(rootDir);
+  const normalizedRoot = resolve(rootDir);
+  const manifest = await loadManifest(normalizedRoot);
   const point = manifest.find((p) => p.id === pointId);
   if (!point) throw new Error(`Restore point ${pointId} not found`);
 
-  const backupDir = join(rootDir, DATA_DIR, "backups", pointId);
+  const backupDir = join(normalizedRoot, DATA_DIR, "backups", pointId);
   const restoredFiles: string[] = [];
 
   for (const file of point.files) {
+    const targetPath = assertWithinRoot(normalizedRoot, file);
     const backupPath = join(backupDir, file.replace(/[\\/]/g, "__"));
     try {
       const content = await readFile(backupPath, "utf-8");
-      const targetPath = join(rootDir, file);
       await mkdir(dirname(targetPath), { recursive: true });
       await writeFile(targetPath, content);
       restoredFiles.push(file);
