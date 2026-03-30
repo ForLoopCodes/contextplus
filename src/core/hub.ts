@@ -76,7 +76,12 @@ export async function discoverHubs(rootDir: string): Promise<string[]> {
   const skip = new Set(["node_modules", ".git", "build", "dist", ".mcp_data"]);
 
   async function walk(dir: string): Promise<void> {
-    const entries = await readdir(dir, { withFileTypes: true });
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
     for (const entry of entries) {
       if (skip.has(entry.name)) continue;
       const full = join(dir, entry.name);
@@ -84,10 +89,13 @@ export async function discoverHubs(rootDir: string): Promise<string[]> {
       if (entry.isDirectory()) {
         await walk(full);
       } else if (entry.name.endsWith(".md")) {
-        const content = await readFile(full, "utf-8");
-        if (WIKILINK_RE.test(content)) {
-          hubs.push(relative(rootDir, full).replace(/\\/g, "/"));
-          WIKILINK_RE.lastIndex = 0;
+        try {
+          const content = await readFile(full, "utf-8");
+          if (WIKILINK_RE.test(content)) {
+            hubs.push(relative(rootDir, full).replace(/\\/g, "/"));
+            WIKILINK_RE.lastIndex = 0;
+          }
+        } catch {
         }
       }
     }

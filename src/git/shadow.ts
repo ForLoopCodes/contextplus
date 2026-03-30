@@ -1,12 +1,8 @@
-// Shadow git branch manager for safe AI change tracking
-// Creates restore points on hidden branch without polluting main history
+// Local checkpoint snapshots for file restore and iterative agent safety
+// FEATURE: Undoable checkpoint lifecycle without rewriting existing git history
 
-import { simpleGit, type SimpleGit } from "simple-git";
-import { readFile, writeFile, mkdir } from "fs/promises";
-import { join, dirname } from "path";
-
-const SHADOW_BRANCH = "mcp-shadow-history";
-const DATA_DIR = ".mcp_data";
+import { mkdir, readFile, readdir, rm, stat, writeFile } from "fs/promises";
+import { dirname, join, relative, resolve } from "path";
 
 export interface RestorePoint {
   id: string;
@@ -15,106 +11,140 @@ export interface RestorePoint {
   message: string;
 }
 
-async function ensureDataDir(rootDir: string): Promise<string> {
-  const dataPath = join(rootDir, DATA_DIR);
-  await mkdir(dataPath, { recursive: true });
-  return dataPath;
+interface CheckpointManifest {
+  checkpoints: RestorePoint[];
 }
 
-async function loadManifest(rootDir: string): Promise<RestorePoint[]> {
-  const manifestPath = join(rootDir, DATA_DIR, "restore-points.json");
+const CONTEXTPLUS_DIR = ".contextplus";
+const CHECKPOINTS_DIR = "checkpoints";
+const MANIFEST_FILE = "manifest.json";
+const MAX_CHECKPOINTS = 120;
+
+function normalizeFilePath(filePath: string): string {
+  return filePath.replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function checkpointDir(rootDir: string): string {
+  return join(rootDir, CONTEXTPLUS_DIR, CHECKPOINTS_DIR);
+}
+
+function manifestPath(rootDir: string): string {
+  return join(checkpointDir(rootDir), MANIFEST_FILE);
+}
+
+function checkpointDataDir(rootDir: string, checkpointId: string): string {
+  return join(checkpointDir(rootDir), checkpointId);
+}
+
+function backupFilePath(rootDir: string, checkpointId: string, filePath: string): string {
+  return join(checkpointDataDir(rootDir, checkpointId), "files", normalizeFilePath(filePath));
+}
+
+async function ensureCheckpointRoot(rootDir: string): Promise<void> {
+  await mkdir(checkpointDir(rootDir), { recursive: true });
+}
+
+async function loadManifest(rootDir: string): Promise<CheckpointManifest> {
+  await ensureCheckpointRoot(rootDir);
   try {
-    return JSON.parse(await readFile(manifestPath, "utf-8"));
+    const data = JSON.parse(await readFile(manifestPath(rootDir), "utf-8")) as Partial<CheckpointManifest>;
+    const checkpoints = Array.isArray(data.checkpoints) ? data.checkpoints : [];
+    return { checkpoints };
   } catch {
-    return [];
+    return { checkpoints: [] };
   }
 }
 
-async function saveManifest(rootDir: string, points: RestorePoint[]): Promise<void> {
-  const dataPath = await ensureDataDir(rootDir);
-  await writeFile(join(dataPath, "restore-points.json"), JSON.stringify(points, null, 2));
+async function saveManifest(rootDir: string, manifest: CheckpointManifest): Promise<void> {
+  await ensureCheckpointRoot(rootDir);
+  await writeFile(manifestPath(rootDir), JSON.stringify(manifest, null, 2), "utf-8");
 }
 
-export async function createRestorePoint(rootDir: string, files: string[], message: string): Promise<RestorePoint> {
-  const dataPath = await ensureDataDir(rootDir);
-  const id = `rp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const backupDir = join(dataPath, "backups", id);
-  await mkdir(backupDir, { recursive: true });
-
-  for (const file of files) {
-    const fullPath = join(rootDir, file);
-    try {
-      const content = await readFile(fullPath, "utf-8");
-      const backupPath = join(backupDir, file.replace(/[\\/]/g, "__"));
-      await writeFile(backupPath, content);
-    } catch {
-    }
-  }
-
-  const point: RestorePoint = { id, timestamp: Date.now(), files, message };
-  const manifest = await loadManifest(rootDir);
-  manifest.push(point);
-  if (manifest.length > 100) manifest.splice(0, manifest.length - 100);
-  await saveManifest(rootDir, manifest);
-
-  return point;
-}
-
-export async function restorePoint(rootDir: string, pointId: string): Promise<string[]> {
-  const manifest = await loadManifest(rootDir);
-  const point = manifest.find((p) => p.id === pointId);
-  if (!point) throw new Error(`Restore point ${pointId} not found`);
-
-  const backupDir = join(rootDir, DATA_DIR, "backups", pointId);
-  const restoredFiles: string[] = [];
-
-  for (const file of point.files) {
-    const backupPath = join(backupDir, file.replace(/[\\/]/g, "__"));
-    try {
-      const content = await readFile(backupPath, "utf-8");
-      const targetPath = join(rootDir, file);
-      await mkdir(dirname(targetPath), { recursive: true });
-      await writeFile(targetPath, content);
-      restoredFiles.push(file);
-    } catch {
-    }
-  }
-
-  return restoredFiles;
-}
-
-export async function listRestorePoints(rootDir: string): Promise<RestorePoint[]> {
-  return loadManifest(rootDir);
-}
-
-export async function shadowCommit(rootDir: string, message: string): Promise<boolean> {
+async function checkpointFileExists(path: string): Promise<boolean> {
   try {
-    const git: SimpleGit = simpleGit(rootDir);
-    const isRepo = await git.checkIsRepo();
-    if (!isRepo) return false;
-
-    const currentBranch = await git.revparse(["--abbrev-ref", "HEAD"]);
-    const stashResult = await git.stash(["push", "-m", `mcp-shadow: ${message}`]);
-
-    if (!stashResult.includes("No local changes")) {
-      try {
-        const branchExists = await git.branch(["-l", SHADOW_BRANCH]);
-        if (!branchExists.all.includes(SHADOW_BRANCH)) {
-          await git.branch([SHADOW_BRANCH]);
-        }
-        await git.checkout(SHADOW_BRANCH);
-        await git.stash(["pop"]);
-        await git.add(".");
-        await git.commit(`[MCP Shadow] ${message}`);
-        await git.checkout(currentBranch);
-      } catch (e) {
-        await git.checkout(currentBranch);
-        try { await git.stash(["pop"]); } catch { }
-        return false;
-      }
-    }
+    await stat(path);
     return true;
   } catch {
     return false;
   }
+}
+
+async function pruneOldCheckpoints(rootDir: string, manifest: CheckpointManifest): Promise<void> {
+  if (manifest.checkpoints.length <= MAX_CHECKPOINTS) return;
+  const removed = manifest.checkpoints.splice(0, manifest.checkpoints.length - MAX_CHECKPOINTS);
+  await Promise.all(removed.map((checkpoint) => rm(checkpointDataDir(rootDir, checkpoint.id), { recursive: true, force: true })));
+}
+
+export async function createRestorePoint(rootDir: string, files: string[], message: string): Promise<RestorePoint> {
+  const normalizedFiles = Array.from(new Set(files.map(normalizeFilePath).filter(Boolean)));
+  const id = `rp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const timestamp = Date.now();
+  const checkpoint: RestorePoint = { id, timestamp, files: normalizedFiles, message };
+  await Promise.all(normalizedFiles.map(async (filePath) => {
+    const sourcePath = resolve(rootDir, filePath);
+    if (!await checkpointFileExists(sourcePath)) return;
+    const backupPath = backupFilePath(rootDir, id, filePath);
+    await mkdir(dirname(backupPath), { recursive: true });
+    await writeFile(backupPath, await readFile(sourcePath));
+  }));
+  const manifest = await loadManifest(rootDir);
+  manifest.checkpoints.push(checkpoint);
+  manifest.checkpoints.sort((a, b) => a.timestamp - b.timestamp);
+  await pruneOldCheckpoints(rootDir, manifest);
+  await saveManifest(rootDir, manifest);
+  return checkpoint;
+}
+
+export async function listRestorePoints(rootDir: string): Promise<RestorePoint[]> {
+  const manifest = await loadManifest(rootDir);
+  return manifest.checkpoints.slice().sort((a, b) => b.timestamp - a.timestamp);
+}
+
+export async function restorePoint(rootDir: string, pointId: string): Promise<string[]> {
+  const manifest = await loadManifest(rootDir);
+  const checkpoint = manifest.checkpoints.find((entry) => entry.id === pointId);
+  if (!checkpoint) throw new Error(`Restore point ${pointId} not found`);
+  const restored: string[] = [];
+  await Promise.all(checkpoint.files.map(async (filePath) => {
+    const backupPath = backupFilePath(rootDir, checkpoint.id, filePath);
+    if (!await checkpointFileExists(backupPath)) return;
+    const targetPath = resolve(rootDir, filePath);
+    await mkdir(dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, await readFile(backupPath));
+    restored.push(filePath);
+  }));
+  return restored.sort((a, b) => a.localeCompare(b));
+}
+
+export async function getCheckpointSummary(rootDir: string): Promise<string[]> {
+  const checkpoints = await listRestorePoints(rootDir);
+  return checkpoints.map((entry) => `${entry.id} | ${new Date(entry.timestamp).toISOString()} | ${entry.files.length} files | ${entry.message}`);
+}
+
+export async function cleanMissingCheckpointData(rootDir: string): Promise<number> {
+  const manifest = await loadManifest(rootDir);
+  const before = manifest.checkpoints.length;
+  manifest.checkpoints = await manifest.checkpoints.reduce(async (promise, checkpoint) => {
+    const acc = await promise;
+    if (await checkpointFileExists(checkpointDataDir(rootDir, checkpoint.id))) acc.push(checkpoint);
+    return acc;
+  }, Promise.resolve([] as RestorePoint[]));
+  if (manifest.checkpoints.length !== before) await saveManifest(rootDir, manifest);
+  return before - manifest.checkpoints.length;
+}
+
+export async function listCheckpointFiles(rootDir: string, pointId: string): Promise<string[]> {
+  const base = join(checkpointDataDir(rootDir, pointId), "files");
+  if (!await checkpointFileExists(base)) return [];
+  const result: string[] = [];
+  const walk = async (dir: string): Promise<void> => {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = join(dir, entry.name);
+      if (entry.isDirectory()) await walk(entryPath);
+      else result.push(normalizeFilePath(relative(base, entryPath)));
+    }
+  };
+  await walk(base);
+  return result.sort((a, b) => a.localeCompare(b));
 }

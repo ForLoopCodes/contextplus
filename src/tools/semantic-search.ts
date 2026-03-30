@@ -5,6 +5,7 @@ import { walkDirectory } from "../core/walker.js";
 import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js";
 import {
   fetchEmbedding,
+  getEmbeddingBatchConcurrency,
   getEmbeddingBatchSize,
   loadEmbeddingCache,
   saveEmbeddingCache,
@@ -197,9 +198,22 @@ export async function refreshFileSearchEmbeddings(options: { rootDir: string; re
 
   const cache = await loadEmbeddingCache(options.rootDir, SEARCH_CACHE_FILE);
   const pending: { path: string; hash: string; text: string }[] = [];
+  const prepared = new Array<{ path: string; doc: SearchDocument | null }>(uniquePaths.length);
+  const prepConcurrency = Math.min(uniquePaths.length, Math.max(1, getEmbeddingBatchConcurrency() * 4));
+  let nextPathIndex = 0;
 
-  for (const relativePath of uniquePaths) {
-    const doc = await buildSearchDocumentForFile(options.rootDir, relativePath);
+  await Promise.all(Array.from({ length: prepConcurrency }, async () => {
+    while (true) {
+      const pathIndex = nextPathIndex++;
+      if (pathIndex >= uniquePaths.length) return;
+      const path = uniquePaths[pathIndex];
+      prepared[pathIndex] = { path, doc: await buildSearchDocumentForFile(options.rootDir, path) };
+    }
+  }));
+
+  for (const item of prepared) {
+    const relativePath = item.path;
+    const doc = item.doc;
     if (!doc) {
       delete cache[relativePath];
       continue;

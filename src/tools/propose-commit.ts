@@ -1,135 +1,115 @@
-// Code commit gatekeeper enforcing 2-line headers, no inline comments
-// Validates abstraction rules and creates shadow restore points before writing
+// Checkpoint write guard validates files and creates local undo snapshots
+// FEATURE: Safe file writes with validation warnings and checkpoint metadata
 
-import { writeFile, mkdir } from "fs/promises";
-import { resolve, dirname, extname } from "path";
+import { mkdir, writeFile } from "fs/promises";
+import { dirname, extname, resolve } from "path";
 import { createRestorePoint } from "../git/shadow.js";
 import { isSupportedFile } from "../core/parser.js";
 
-export interface ProposeCommitOptions {
+export interface CheckpointOptions {
   rootDir: string;
   filePath: string;
   newContent: string;
 }
 
-interface ValidationError {
+interface ValidationIssue {
   rule: string;
   message: string;
   line?: number;
 }
 
-function validateHeader(lines: string[], ext: string): ValidationError[] {
-  const errors: ValidationError[] = [];
-  const commentPrefixes: Record<string, string> = {
-    ".ts": "//", ".tsx": "//", ".js": "//", ".jsx": "//",
-    ".rs": "//", ".go": "//", ".c": "//", ".cpp": "//",
-    ".java": "//", ".cs": "//", ".swift": "//", ".kt": "//",
-    ".py": "#", ".rb": "#", ".lua": "--", ".zig": "//",
-  };
+const COMMENT_PREFIX_BY_EXT: Record<string, string> = {
+  ".ts": "//",
+  ".tsx": "//",
+  ".js": "//",
+  ".jsx": "//",
+  ".mjs": "//",
+  ".cjs": "//",
+  ".rs": "//",
+  ".go": "//",
+  ".c": "//",
+  ".cpp": "//",
+  ".java": "//",
+  ".cs": "//",
+  ".swift": "//",
+  ".kt": "//",
+  ".zig": "//",
+  ".py": "#",
+  ".rb": "#",
+  ".lua": "--",
+};
 
-  const prefix = commentPrefixes[ext];
-  if (!prefix) return errors;
-
-  const headerLines = lines.slice(0, 5).filter((l) => l.startsWith(prefix));
-  if (headerLines.length < 2) {
-    errors.push({
-      rule: "header",
-      message: `Missing 2-line file header. First 2 lines must be ${prefix} comments explaining the file.`,
-    });
+function validateHeader(lines: string[], ext: string): ValidationIssue[] {
+  const prefix = COMMENT_PREFIX_BY_EXT[ext];
+  if (!prefix) return [];
+  const issues: ValidationIssue[] = [];
+  if (!lines[0]?.trim().startsWith(prefix)) {
+    issues.push({ rule: "header", message: `line 1 must start with ${prefix}` });
   }
-
-  if (headerLines.length >= 2 && !headerLines[1].toUpperCase().includes("FEATURE:")) {
-    errors.push({
-      rule: "feature-tag",
-      message: `Line 2 should include a FEATURE: tag (e.g., "${prefix} FEATURE: Feature Name"). Links files to feature hubs.`,
-    });
+  if (!lines[1]?.trim().startsWith(prefix)) {
+    issues.push({ rule: "header", message: `line 2 must start with ${prefix}` });
   }
-
-  return errors;
+  return issues;
 }
 
-function validateNoInlineComments(lines: string[], ext: string): ValidationError[] {
-  const errors: ValidationError[] = [];
-  const isScriptLang = [".py", ".rb"].includes(ext);
-  const commentPrefix = isScriptLang ? "#" : "//";
-
+function validateNoInlineComments(lines: string[], ext: string): ValidationIssue[] {
+  const prefix = COMMENT_PREFIX_BY_EXT[ext];
+  if (!prefix) return [];
+  const issues: ValidationIssue[] = [];
   for (let i = 2; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (trimmed.startsWith(commentPrefix) && !trimmed.startsWith("#!") && !trimmed.startsWith("#include")) {
-      errors.push({
-        rule: "no-comments",
-        message: `Unauthorized comment found on line ${i + 1}: ${trimmed.substring(0, 80)}`,
-        line: i + 1,
-      });
-    }
+    if (!trimmed.startsWith(prefix)) continue;
+    if (prefix === "#" && (trimmed.startsWith("#!") || trimmed.startsWith("#include"))) continue;
+    issues.push({ rule: "no-comments", message: "comment outside header", line: i + 1 });
   }
-
-  return errors;
+  return issues;
 }
 
-function validateAbstraction(lines: string[]): ValidationError[] {
-  const errors: ValidationError[] = [];
-  let nestingDepth = 0;
+function validateAbstraction(lines: string[]): ValidationIssue[] {
+  let nesting = 0;
   let maxNesting = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    nestingDepth += (line.match(/{/g) || []).length;
-    nestingDepth -= (line.match(/}/g) || []).length;
-    maxNesting = Math.max(maxNesting, nestingDepth);
+  for (const line of lines) {
+    nesting += (line.match(/{/g) ?? []).length;
+    nesting -= (line.match(/}/g) ?? []).length;
+    if (nesting > maxNesting) maxNesting = nesting;
   }
-
-  if (maxNesting > 6) {
-    errors.push({
-      rule: "nesting",
-      message: `Nesting depth of ${maxNesting} detected. Maximum recommended is 3-4 levels. Flatten the structure.`,
-    });
-  }
-
-  if (lines.length > 1000) {
-    errors.push({
-      rule: "file-length",
-      message: `File is ${lines.length} lines. Maximum recommended is 500-1000. Consider splitting.`,
-    });
-  }
-
-  return errors;
+  const issues: ValidationIssue[] = [];
+  if (maxNesting > 6) issues.push({ rule: "nesting", message: `nesting depth ${maxNesting} exceeds recommended 4` });
+  if (lines.length > 1000) issues.push({ rule: "file-length", message: `file length ${lines.length} exceeds recommended 1000` });
+  return issues;
 }
 
-export async function proposeCommit(options: ProposeCommitOptions): Promise<string> {
+function formatIssues(issues: ValidationIssue[]): string[] {
+  return issues.map((issue) => `${issue.line ? `L${issue.line} ` : ""}[${issue.rule}] ${issue.message}`);
+}
+
+export async function checkpoint(options: CheckpointOptions): Promise<string> {
   const fullPath = resolve(options.rootDir, options.filePath);
-  const ext = extname(fullPath);
   const lines = options.newContent.split("\n");
-  const allErrors: ValidationError[] = [];
-
-  if (isSupportedFile(fullPath)) {
-    allErrors.push(...validateHeader(lines, ext));
-    allErrors.push(...validateNoInlineComments(lines, ext));
-  }
-  allErrors.push(...validateAbstraction(lines));
-
-  const commentErrors = allErrors.filter((e) => e.rule === "no-comments");
-  if (commentErrors.length > 5) {
+  const ext = extname(fullPath).toLowerCase();
+  const issues = [
+    ...(isSupportedFile(fullPath) ? validateHeader(lines, ext) : []),
+    ...(isSupportedFile(fullPath) ? validateNoInlineComments(lines, ext) : []),
+    ...validateAbstraction(lines),
+  ];
+  const commentViolations = issues.filter((issue) => issue.rule === "no-comments");
+  if (commentViolations.length > 5) {
     return [
-      `REJECTED: ${allErrors.length} violations found.\n`,
-      ...allErrors.slice(0, 10).map((e) => `  ❌ [${e.rule}] ${e.message}`),
-      allErrors.length > 10 ? `  ... and ${allErrors.length - 10} more violations` : "",
-      "\nFix all violations and resubmit.",
-    ].join("\n");
+      `REJECTED: ${issues.length} validation issues`,
+      ...formatIssues(issues.slice(0, 12)),
+      issues.length > 12 ? `... ${issues.length - 12} more issues` : "",
+    ].filter(Boolean).join("\n");
   }
-
-  const warnings = allErrors.filter((e) => e.rule !== "no-comments" || commentErrors.length <= 5);
-
-  await createRestorePoint(options.rootDir, [options.filePath], `Pre-commit: ${options.filePath}`);
+  const restorePoint = await createRestorePoint(options.rootDir, [options.filePath], `Checkpoint before writing ${options.filePath}`);
   await mkdir(dirname(fullPath), { recursive: true });
   await writeFile(fullPath, options.newContent, "utf-8");
+  return [
+    `✅ File saved: ${options.filePath}`,
+    `Restore point: ${restorePoint.id}`,
+    ...(issues.length > 0 ? ["⚠ Warnings:", ...formatIssues(issues)] : ["Warnings: none"]),
+  ].join("\n");
+}
 
-  const result = [`✅ File saved: ${options.filePath}`];
-  if (warnings.length > 0) {
-    result.push(`\n⚠ ${warnings.length} warning(s):`);
-    for (const w of warnings) result.push(`  ⚠ [${w.rule}] ${w.message}`);
-  }
-  result.push(`\nRestore point created. Use undo tools if needed.`);
-
-  return result.join("\n");
+export async function proposeCommit(options: CheckpointOptions): Promise<string> {
+  return checkpoint(options);
 }

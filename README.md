@@ -10,45 +10,46 @@ https://github.com/user-attachments/assets/a97a451f-c9b4-468d-b036-15b65fc13e79
 
 ### Discovery
 
-| Tool                         | Description                                                                                                                                                      |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get_context_tree`           | Structural AST tree of a project with file headers and symbol ranges (line numbers for functions/classes/methods). Dynamic pruning shrinks output automatically. |
-| `get_file_skeleton`          | Function signatures, class methods, and type definitions with line ranges, without reading full bodies. Shows the API surface.                                   |
-| `semantic_code_search`       | Search by meaning, not exact text. Uses embeddings over file headers/symbols and returns matched symbol definition lines.                                        |
-| `semantic_identifier_search` | Identifier-level semantic retrieval for functions/classes/variables with ranked call sites and line numbers.                                                     |
-| `semantic_navigate`          | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters.                                                   |
+| Tool       | Description                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tree`     | Structural AST tree of a project with file headers and symbol ranges (line numbers for functions/classes/methods). Dynamic pruning shrinks output automatically. |
+| `skeleton` | Function signatures, class methods, and type definitions with line ranges, without reading full bodies. Shows the API surface.                                   |
+| `search`   | Unified search for file-level and identifier-level retrieval with semantic, keyword, or hybrid modes.                                                            |
+| `cluster`  | Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters.                                                   |
 
 ### Analysis
 
-| Tool                  | Description                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `get_blast_radius`    | Trace every file and line where a symbol is imported or used. Prevents orphaned references.                                   |
-| `run_static_analysis` | Run native linters and compilers to find unused variables, dead code, and type errors. Supports TypeScript, Python, Rust, Go. |
+| Tool           | Description                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `blast_radius` | Trace every file and line where a symbol is imported or used. Prevents orphaned references.                       |
+| `lint`         | Run native linters/compilers and project skill checks to find errors, dead code, and instruction-rule violations. |
 
 ### Code Ops
 
-| Tool              | Description                                                                                                              |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `propose_commit`  | The only way to write code. Validates against strict rules before saving. Creates a shadow restore point before writing. |
-| `get_feature_hub` | Obsidian-style feature hub navigator. Hubs are `.md` files with `[[wikilinks]]` that map features to code files.         |
+| Tool         | Description                                                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `checkpoint` | Write code after validation and create a local restore point before saving.                                            |
+| `find_hub`   | Query-ranked feature hub search with semantic/keyword/both modes; without query it returns all hub context in project. |
+| `init`       | Initialize `.contextplus` workspace with hubs, embeddings, config, and memories structure plus context tree snapshot.  |
 
 ### Version Control
 
-| Tool                  | Description                                                                                                |
-| --------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `list_restore_points` | List all shadow restore points created by `propose_commit`. Each captures file state before AI changes.    |
-| `undo_change`         | Restore files to their state before a specific AI change. Uses shadow restore points. Does not affect git. |
+| Tool             | Description                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `restore_points` | List all local restore points created by `checkpoint`.                                       |
+| `restore`        | Restore files to their state at a specific local restore point. Does not affect git history. |
 
 ### Memory & RAG
 
-| Tool                      | Description                                                                                              |
-| ------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `upsert_memory_node`      | Create or update a memory node (concept, file, symbol, note) with auto-generated embeddings.             |
-| `create_relation`         | Create typed edges between nodes (relates_to, depends_on, implements, references, similar_to, contains). |
-| `search_memory_graph`     | Semantic search with graph traversal — finds direct matches then walks 1st/2nd-degree neighbors.         |
-| `prune_stale_links`       | Remove decayed edges (e^(-λt) below threshold) and orphan nodes with low access counts.                  |
-| `add_interlinked_context` | Bulk-add nodes with auto-similarity linking (cosine ≥ 0.72 creates edges automatically).                 |
-| `retrieve_with_traversal` | Start from a node and walk outward — returns all reachable neighbors scored by decay and depth.          |
+| Tool              | Description                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------- |
+| `create_memory`   | Create or update a memory node (concept, file, symbol, note) with auto-generated embeddings.             |
+| `update_memory`   | Update memory node content and refresh embeddings.                                                       |
+| `delete_memory`   | Delete memory nodes or relation edges.                                                                   |
+| `create_relation` | Create typed edges between nodes (relates_to, depends_on, implements, references, similar_to, contains). |
+| `search_memory`   | Semantic/keyword search with graph traversal — finds direct matches then walks neighbors.                |
+| `explore_memory`  | Start from a node and walk outward — returns reachable neighbors scored by decay and depth.              |
+| `bulk_memory`     | Bulk-add nodes with optional auto-similarity linking.                                                    |
 
 ## Setup
 
@@ -136,10 +137,10 @@ npm run build
 
 Context+ supports two embedding backends controlled by `CONTEXTPLUS_EMBED_PROVIDER`:
 
-| Provider | Value | Requires | Best For |
-|----------|-------|----------|----------|
-| **Ollama** (default) | `ollama` | Local Ollama server | Free, offline, private |
-| **OpenAI-compatible** | `openai` | API key | Gemini (free tier), OpenAI, Groq, vLLM |
+| Provider              | Value    | Requires            | Best For                               |
+| --------------------- | -------- | ------------------- | -------------------------------------- |
+| **Ollama** (default)  | `ollama` | Local Ollama server | Free, offline, private                 |
+| **OpenAI-compatible** | `openai` | API key             | Gemini (free tier), OpenAI, Groq, vLLM |
 
 ### Ollama (Default)
 
@@ -212,7 +213,7 @@ Any endpoint implementing the [OpenAI Embeddings API](https://platform.openai.co
 }
 ```
 
-> **Note:** The `semantic_navigate` tool also uses a chat model for cluster labeling. When using the `openai` provider, set `CONTEXTPLUS_OPENAI_CHAT_MODEL` (default: `gpt-4o-mini`).
+> **Note:** The `cluster` tool uses a chat model for cluster labeling. When using the `openai` provider, set `CONTEXTPLUS_OPENAI_CHAT_MODEL` (default: `gpt-4o-mini`).
 >
 > For VS Code, Cursor, or OpenCode, use the same `env` block inside your IDE's MCP config format (see [Config file locations](#setup) table above).
 
@@ -220,38 +221,39 @@ Any endpoint implementing the [OpenAI Embeddings API](https://platform.openai.co
 
 Three layers built with TypeScript over stdio using the Model Context Protocol SDK:
 
-**Core** (`src/core/`) - Multi-language AST parsing (tree-sitter, 43 extensions), gitignore-aware traversal, Ollama vector embeddings with disk cache, wikilink hub graph, in-memory property graph with decay scoring.
+**Core** (`src/core/`) - Multi-language AST parsing (tree-sitter, 43 extensions), gitignore-aware traversal, vector DB-backed embeddings, wikilink hub graph, and markdown-backed memory graph with traversal scoring.
 
-**Tools** (`src/tools/`) - 17 MCP tools exposing structural, semantic, operational, and memory graph capabilities.
+**Tools** (`src/tools/`) - 18 MCP tools exposing structural, semantic, operational, and memory graph capabilities.
 
 **Git** (`src/git/`) - Shadow restore point system for undo without touching git history.
 
-**Runtime Cache** (`.mcp_data/`) - created on server startup; stores reusable file, identifier, and call-site embeddings to avoid repeated GPU/CPU embedding work. A realtime tracker refreshes changed files/functions incrementally.
+**Runtime Workspace** (`.contextplus/`) - initialized by `init`; stores hubs, embeddings database, config snapshots, and memory graph files. A realtime tracker refreshes changed files/functions incrementally.
 
 ## Config
 
-| Variable                                | Type                      | Default                                | Description                                                   |
-| --------------------------------------- | ------------------------- | -------------------------------------- | ------------------------------------------------------------- |
-| `CONTEXTPLUS_EMBED_PROVIDER`            | string                    | `ollama`                               | Embedding backend: `ollama` or `openai`                      |
-| `OLLAMA_EMBED_MODEL`                    | string                    | `nomic-embed-text`                     | Ollama embedding model                                        |
-| `OLLAMA_API_KEY`                        | string                    | -                                      | Ollama Cloud API key                                          |
-| `OLLAMA_CHAT_MODEL`                     | string                    | `llama3.2`                             | Ollama chat model for cluster labeling                        |
-| `CONTEXTPLUS_OPENAI_API_KEY`            | string                    | -                                      | API key for OpenAI-compatible provider (alias: `OPENAI_API_KEY`) |
-| `CONTEXTPLUS_OPENAI_BASE_URL`           | string                    | `https://api.openai.com/v1`            | OpenAI-compatible endpoint URL (alias: `OPENAI_BASE_URL`)    |
-| `CONTEXTPLUS_OPENAI_EMBED_MODEL`        | string                    | `text-embedding-3-small`               | OpenAI-compatible embedding model (alias: `OPENAI_EMBED_MODEL`) |
-| `CONTEXTPLUS_OPENAI_CHAT_MODEL`         | string                    | `gpt-4o-mini`                          | OpenAI-compatible chat model for labeling (alias: `OPENAI_CHAT_MODEL`) |
-| `CONTEXTPLUS_EMBED_BATCH_SIZE`          | string (parsed as number) | `8`                | Embedding batch size per GPU call, clamped to 5-10            |
-| `CONTEXTPLUS_EMBED_CHUNK_CHARS`         | string (parsed as number) | `2000`             | Per-chunk chars before merge, clamped to 256-8000             |
-| `CONTEXTPLUS_MAX_EMBED_FILE_SIZE`       | string (parsed as number) | `51200`            | Skip non-code text files larger than this many bytes          |
-| `CONTEXTPLUS_EMBED_NUM_GPU`             | string (parsed as number) | -                  | Optional Ollama embed runtime `num_gpu` override              |
-| `CONTEXTPLUS_EMBED_MAIN_GPU`            | string (parsed as number) | -                  | Optional Ollama embed runtime `main_gpu` override             |
-| `CONTEXTPLUS_EMBED_NUM_THREAD`          | string (parsed as number) | -                  | Optional Ollama embed runtime `num_thread` override           |
-| `CONTEXTPLUS_EMBED_NUM_BATCH`           | string (parsed as number) | -                  | Optional Ollama embed runtime `num_batch` override            |
-| `CONTEXTPLUS_EMBED_NUM_CTX`             | string (parsed as number) | -                  | Optional Ollama embed runtime `num_ctx` override              |
-| `CONTEXTPLUS_EMBED_LOW_VRAM`            | string (parsed as boolean)| -                  | Optional Ollama embed runtime `low_vram` override             |
-| `CONTEXTPLUS_EMBED_TRACKER`             | string (parsed as boolean)| `true`             | Enable realtime embedding refresh on file changes             |
-| `CONTEXTPLUS_EMBED_TRACKER_MAX_FILES`   | string (parsed as number) | `8`                | Max changed files processed per tracker tick, clamped to 5-10 |
-| `CONTEXTPLUS_EMBED_TRACKER_DEBOUNCE_MS` | string (parsed as number) | `700`              | Debounce window before tracker refresh                        |
+| Variable                                | Type                       | Default                     | Description                                                            |
+| --------------------------------------- | -------------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| `CONTEXTPLUS_EMBED_PROVIDER`            | string                     | `ollama`                    | Embedding backend: `ollama` or `openai`                                |
+| `OLLAMA_EMBED_MODEL`                    | string                     | `nomic-embed-text`          | Ollama embedding model                                                 |
+| `OLLAMA_API_KEY`                        | string                     | -                           | Ollama Cloud API key                                                   |
+| `OLLAMA_CHAT_MODEL`                     | string                     | `llama3.2`                  | Ollama chat model for cluster labeling                                 |
+| `CONTEXTPLUS_OPENAI_API_KEY`            | string                     | -                           | API key for OpenAI-compatible provider (alias: `OPENAI_API_KEY`)       |
+| `CONTEXTPLUS_OPENAI_BASE_URL`           | string                     | `https://api.openai.com/v1` | OpenAI-compatible endpoint URL (alias: `OPENAI_BASE_URL`)              |
+| `CONTEXTPLUS_OPENAI_EMBED_MODEL`        | string                     | `text-embedding-3-small`    | OpenAI-compatible embedding model (alias: `OPENAI_EMBED_MODEL`)        |
+| `CONTEXTPLUS_OPENAI_CHAT_MODEL`         | string                     | `gpt-4o-mini`               | OpenAI-compatible chat model for labeling (alias: `OPENAI_CHAT_MODEL`) |
+| `CONTEXTPLUS_EMBED_BATCH_SIZE`          | string (parsed as number)  | `8`                         | Embedding batch size per GPU call, clamped to 5-10                     |
+| `CONTEXTPLUS_EMBED_BATCH_CONCURRENCY`   | string (parsed as number)  | `1`                         | Number of embedding batches processed concurrently, clamped to 1-8     |
+| `CONTEXTPLUS_EMBED_CHUNK_CHARS`         | string (parsed as number)  | `2000`                      | Per-chunk chars before merge, clamped to 256-8000                      |
+| `CONTEXTPLUS_MAX_EMBED_FILE_SIZE`       | string (parsed as number)  | `51200`                     | Skip non-code text files larger than this many bytes                   |
+| `CONTEXTPLUS_EMBED_NUM_GPU`             | string (parsed as number)  | -                           | Optional Ollama embed runtime `num_gpu` override                       |
+| `CONTEXTPLUS_EMBED_MAIN_GPU`            | string (parsed as number)  | -                           | Optional Ollama embed runtime `main_gpu` override                      |
+| `CONTEXTPLUS_EMBED_NUM_THREAD`          | string (parsed as number)  | -                           | Optional Ollama embed runtime `num_thread` override                    |
+| `CONTEXTPLUS_EMBED_NUM_BATCH`           | string (parsed as number)  | -                           | Optional Ollama embed runtime `num_batch` override                     |
+| `CONTEXTPLUS_EMBED_NUM_CTX`             | string (parsed as number)  | -                           | Optional Ollama embed runtime `num_ctx` override                       |
+| `CONTEXTPLUS_EMBED_LOW_VRAM`            | string (parsed as boolean) | -                           | Optional Ollama embed runtime `low_vram` override                      |
+| `CONTEXTPLUS_EMBED_TRACKER`             | string (parsed as boolean) | `true`                      | Enable realtime embedding refresh on file changes                      |
+| `CONTEXTPLUS_EMBED_TRACKER_MAX_FILES`   | string (parsed as number)  | `8`                         | Max changed files processed per tracker tick, clamped to 5-10          |
+| `CONTEXTPLUS_EMBED_TRACKER_DEBOUNCE_MS` | string (parsed as number)  | `700`                       | Debounce window before tracker refresh                                 |
 
 ## Test
 

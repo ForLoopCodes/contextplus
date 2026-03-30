@@ -1,5 +1,5 @@
-// File-system embedding tracker for realtime cache refresh on source changes
-// FEATURE: Incremental embedding updates for changed files and identifiers
+// Background file watcher for incremental embedding updates on source changes
+// Init-once pattern: starts on first tool use (lazy) or server boot (eager)
 
 import { watch, type FSWatcher } from "fs";
 import { refreshFileSearchEmbeddings } from "../tools/semantic-search.js";
@@ -22,109 +22,77 @@ export interface EmbeddingTrackerControllerOptions extends EmbeddingTrackerOptio
   starter?: (options: EmbeddingTrackerOptions) => () => void;
 }
 
-const MIN_FILES_PER_TICK = 5;
-const MAX_FILES_PER_TICK = 10;
-const DEFAULT_FILES_PER_TICK = 8;
-const DEFAULT_DEBOUNCE_MS = 1500;
-const MAX_PENDING_FILES = 50;
+const FILES_PER_TICK = { min: 5, max: 10, default: 8 };
+const DEBOUNCE_MS = { min: 500, default: 1500 };
+const MAX_PENDING = 50;
+const QUIET_REFRESH_DELAY = 100;
 
-const IGNORE_PREFIXES = [
-  ".mcp_data/",
-  ".git/",
-  "node_modules/",
-  "build/",
-  "dist/",
-  "landing/.next/",
-];
+const IGNORE_PREFIXES = [".mcp_data/", ".contextplus/", ".git/", "node_modules/", "build/", "dist/", "landing/.next/"];
 
-function normalizeRelativePath(path: string): string {
-  return path.replace(/\\/g, "/").replace(/^\/+/, "");
-}
-
-function shouldTrack(path: string): boolean {
-  if (!path) return false;
-  return !IGNORE_PREFIXES.some((prefix) => path.startsWith(prefix));
-}
-
-function clampFilesPerTick(value: number | undefined): number {
-  if (!Number.isFinite(value)) return DEFAULT_FILES_PER_TICK;
-  return Math.max(MIN_FILES_PER_TICK, Math.min(MAX_FILES_PER_TICK, Math.floor(value ?? DEFAULT_FILES_PER_TICK)));
-}
-
-function clampDebounceMs(value: number | undefined): number {
-  if (!Number.isFinite(value)) return DEFAULT_DEBOUNCE_MS;
-  return Math.max(500, Math.floor(value ?? DEFAULT_DEBOUNCE_MS));
-}
+const normalize = (path: string): string => path.replace(/\\/g, "/").replace(/^\/+/, "");
+const shouldTrack = (path: string): boolean => path ? !IGNORE_PREFIXES.some((p) => path.startsWith(p)) : false;
+const clampInt = (v: number | undefined, min: number, max: number, def: number): number =>
+  Number.isFinite(v) ? Math.max(min, Math.min(max, Math.floor(v!))) : def;
 
 export function parseEmbeddingTrackerMode(value: string | undefined): "off" | "lazy" | "eager" {
   if (!value) return "lazy";
-  const normalized = value.trim().toLowerCase();
-  if (["false", "0", "no", "off", "disabled", "none"].includes(normalized)) return "off";
-  if (["eager", "startup", "boot"].includes(normalized)) return "eager";
+  const v = value.trim().toLowerCase();
+  if (["false", "0", "no", "off", "disabled", "none"].includes(v)) return "off";
+  if (["eager", "startup", "boot"].includes(v)) return "eager";
   return "lazy";
 }
 
 export function startEmbeddingTracker(options: EmbeddingTrackerOptions): () => void {
-  const pendingFiles = new Set<string>();
-  const debounceMs = clampDebounceMs(options.debounceMs);
-  const maxFilesPerTick = clampFilesPerTick(options.maxFilesPerTick);
+  const pending = new Set<string>();
+  const debounceMs = clampInt(options.debounceMs, DEBOUNCE_MS.min, 10000, DEBOUNCE_MS.default);
+  const filesPerTick = clampInt(options.maxFilesPerTick, FILES_PER_TICK.min, FILES_PER_TICK.max, FILES_PER_TICK.default);
 
   let watcher: FSWatcher | null = null;
   let timer: NodeJS.Timeout | null = null;
-  let isProcessing = false;
+  let processing = false;
   let closed = false;
+  let errorCount = 0;
 
-  const schedule = (delay: number = debounceMs): void => {
+  const schedule = (delay = debounceMs): void => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      void flushPending();
-    }, delay);
+    timer = setTimeout(() => void flush(), delay);
     timer.unref();
   };
 
-  const flushPending = async (): Promise<void> => {
-    if (closed || isProcessing) return;
-    if (pendingFiles.size === 0) return;
+  const flush = async (): Promise<void> => {
+    if (closed || processing || pending.size === 0) return;
+    processing = true;
 
-    isProcessing = true;
-    const batch = Array.from(pendingFiles).slice(0, maxFilesPerTick);
-    for (const file of batch) pendingFiles.delete(file);
+    const batch = Array.from(pending).slice(0, filesPerTick);
+    for (const f of batch) pending.delete(f);
 
     try {
-      const [fileEmbeds, identifierEmbeds] = await Promise.all([
+      await Promise.all([
         refreshFileSearchEmbeddings({ rootDir: options.rootDir, relativePaths: batch }),
         refreshIdentifierEmbeddings({ rootDir: options.rootDir, relativePaths: batch }),
       ]);
-      if (fileEmbeds > 0 || identifierEmbeds > 0) {
-        console.error(
-          `Embedding tracker refreshed ${batch.length} file(s) | file-vectors=${fileEmbeds}, identifier-vectors=${identifierEmbeds}`,
-        );
-      }
-    } catch (error) {
-      console.error("Embedding tracker refresh failed:", error);
+      errorCount = 0;
+    } catch {
+      if (++errorCount <= 3) console.error(`Embedding refresh failed (attempt ${errorCount}/3)`);
     } finally {
-      isProcessing = false;
-      if (pendingFiles.size > 0) schedule(100);
+      processing = false;
+      if (pending.size > 0) schedule(QUIET_REFRESH_DELAY);
     }
   };
 
   try {
-    watcher = watch(options.rootDir, { recursive: true }, (_eventType, fileName) => {
+    watcher = watch(options.rootDir, { recursive: true }, (_, fileName) => {
       if (closed || !fileName) return;
-      const relativePath = normalizeRelativePath(String(fileName));
-      if (!shouldTrack(relativePath)) return;
-      if (pendingFiles.size >= MAX_PENDING_FILES) return;
-      pendingFiles.add(relativePath);
-      schedule();
+      const rel = normalize(String(fileName));
+      if (shouldTrack(rel) && pending.size < MAX_PENDING) {
+        pending.add(rel);
+        schedule();
+      }
     });
-  } catch (error) {
-    console.error("Embedding tracker disabled: file watching is unavailable.", error);
+    watcher.on("error", () => { });
+  } catch {
     return () => { };
   }
-
-  watcher.on("error", (error) => {
-    console.error("Embedding tracker watcher error:", error);
-  });
 
   return () => {
     closed = true;
@@ -135,15 +103,15 @@ export function startEmbeddingTracker(options: EmbeddingTrackerOptions): () => v
 }
 
 export function createEmbeddingTrackerController(options: EmbeddingTrackerControllerOptions): EmbeddingTrackerController {
-  const { mode: rawMode, starter = startEmbeddingTracker, ...trackerOptions } = options;
+  const { mode: rawMode, starter = startEmbeddingTracker, ...trackerOpts } = options;
   const mode = parseEmbeddingTrackerMode(rawMode);
 
   let running = false;
-  let stopTracker = () => { };
+  let stopFn = () => { };
 
   const ensureStarted = (): void => {
     if (running || mode === "off") return;
-    stopTracker = starter(trackerOptions);
+    stopFn = starter(trackerOpts);
     running = true;
   };
 
@@ -154,9 +122,9 @@ export function createEmbeddingTrackerController(options: EmbeddingTrackerContro
     stop: () => {
       if (!running) return;
       running = false;
-      const stop = stopTracker;
-      stopTracker = () => { };
-      stop();
+      const s = stopFn;
+      stopFn = () => { };
+      s();
     },
     isRunning: () => running,
   };

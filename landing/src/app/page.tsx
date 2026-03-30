@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const toolRefRows = [
   {
-    name: "get_context_tree",
+    name: "tree",
     desc: "Get the structural AST tree of a project with file headers plus line-numbered function/class/method symbols. Dynamic token-aware pruning shrinks output automatically.",
     input:
       "{\n  target_path?: string,\n  depth_limit?: number,\n  include_symbols?: boolean,\n  max_tokens?: number\n}",
@@ -17,71 +17,71 @@ const toolRefRows = [
       '"src/\n  index.ts - Entry point\n    function: getStars() (L170-L181)\n    function: Home() (L183-L760)\n  utils/\n    parser.ts - AST parsing\n      function: parseFile() (L22-L84)\n      function: walkTree() (L86-L132)"',
   },
   {
-    name: "get_file_skeleton",
+    name: "skeleton",
     desc: "Get function signatures, class methods, and type definitions of a file with line ranges, without reading the full body.",
     input: "{ file_path: string }",
     output:
       '"[function] L12-L58 export function parseFile(\n  filePath: string,\n  options?: ParseOptions\n): Promise<AST>;\n\n[class] L60-L130 export class Walker;\n  [method] L72-L94 walk(node: Node): void;\n  [method] L96-L118 getSymbols(): Symbol[];"',
   },
   {
-    name: "semantic_code_search",
-    desc: "Search the codebase by meaning, not exact text. Uses embeddings over file headers/symbols and returns matched definition lines.",
-    input: "{ query: string, top_k?: number }",
+    name: "search",
+    desc: "Unified semantic/keyword search for files or identifiers. Supports file, identifier, and hybrid modes.",
+    input: '{ query: string, search_type?: "file" | "identifier" | "hybrid", mode?: "semantic" | "keyword" | "both", top_k?: number }',
     output:
       '"1. src/auth/jwt.ts (94.0% total)\n   Semantic: 91.5% | Keyword: 96.2%\n   Definition lines: verifyToken@L20-L58, signToken@L60-L102\n2. src/auth/session.ts (87.4% total)\n   Definition lines: createSession@L12-L42"',
   },
   {
-    name: "semantic_identifier_search",
-    desc: "Find closest functions/classes/variables by meaning, then return ranked definition and call-chain locations with line numbers. Uses realtime-refreshed identifier embeddings.",
+    name: "search",
+    desc: "Identifier-focused search using the unified search tool with ranked definitions and call-chain locations.",
     input:
-      "{\n  query: string,\n  top_k?: number,\n  top_calls_per_identifier?: number,\n  include_kinds?: string[]\n}",
+      '{\n  query: string,\n  search_type: "identifier",\n  top_k?: number,\n  top_calls_per_identifier?: number,\n  include_kinds?: string[]\n}',
     output:
       '"1. function verifyToken - src/auth/jwt.ts (L20-L58)\n   Score: 92.4%\n   Calls (3/3):\n     1. src/middleware/guard.ts:L33 (88.1%) verifyToken(token)\n     2. src/routes/api.ts:L12 (84.7%) const user = verifyToken(raw)\n2. variable tokenExpiry - src/auth/config.ts (L8)"',
   },
   {
-    name: "get_blast_radius",
+    name: "blast_radius",
     desc: "Before modifying code, trace every file and line where a symbol is imported or used. Prevents orphaned references.",
     input: "{\n  symbol_name: string,\n  file_context?: string\n}",
     output:
       '"parseFile - 7 usages\n  src/index.ts:14  import { parseFile }\n  src/tools/tree.ts:8  const ast = parseFile(p)\n  src/tools/skeleton.ts:22  parseFile(path)\n  test/parser.test.ts:5  import { parseFile }"',
   },
   {
-    name: "run_static_analysis",
-    desc: "Run the native linter or compiler to find unused variables, dead code, and type errors. Supports TypeScript, Python, Rust, Go.",
+    name: "lint",
+    desc: "Run native lint/compiler checks plus skill scoring to find errors, dead code, and rule violations.",
     input: "{ target_path?: string }",
     output:
       '"src/utils.ts:14:5\n  error TS2345: Argument of type string\n  is not assignable to parameter\n\nsrc/old.ts:1:1\n  warning: file has no exports"',
   },
   {
-    name: "propose_commit",
-    desc: "The only way to write code. Validates against strict rules before saving. Creates a shadow restore point before writing.",
+    name: "checkpoint",
+    desc: "Write code after validation and create a local restore point before saving.",
     input: "{\n  file_path: string,\n  new_content: string\n}",
     output:
       '"✓ Header comment present\n✓ No inline comments\n✓ Max nesting depth: 3\n✓ File length: 142 lines\n\nSaved src/tools/search.ts\nRestore point: rp-1719384000-a3f2"',
   },
   {
-    name: "list_restore_points",
-    desc: "List all shadow restore points created by propose_commit. Each captures file state before AI changes.",
+    name: "restore_points",
+    desc: "List all local restore points created by checkpoint. Each captures file state before AI changes.",
     input: "{ }",
     output:
       '"rp-1719384000-a3f2 | 2025-06-26\n  src/tools/search.ts | refactor search\n\nrp-1719383000-b7c1 | 2025-06-26\n  src/index.ts | add new tool"',
   },
   {
-    name: "undo_change",
-    desc: "Restore files to their state before a specific AI change. Uses shadow restore points. Does not affect git.",
+    name: "restore",
+    desc: "Restore files to their state before a specific AI change. Uses local restore points. Does not affect git.",
     input: "{ point_id: string }",
     output: '"Restored 1 file(s):\n  src/tools/search.ts"',
   },
   {
-    name: "semantic_navigate",
+    name: "cluster",
     desc: "Browse codebase by meaning using spectral clustering. Groups semantically related files into labeled clusters.",
     input: "{\n  max_depth?: number,\n  max_clusters?: number\n}",
     output:
       '"Authentication (4 files)\n  src/auth/jwt.ts\n  src/auth/session.ts\n  src/middleware/guard.ts\n  src/models/user.ts\n\nParsing (3 files)\n  src/core/parser.ts\n  src/core/tree-sitter.ts\n  src/core/walker.ts"',
   },
   {
-    name: "get_feature_hub",
-    desc: "Obsidian-style feature hub navigator. Hubs are .md files with [[wikilinks]] that map features to code files.",
+    name: "find_hub",
+    desc: "Rank feature hubs by semantic/keyword query, or return all hubs context when query is omitted.",
     input:
       "{\n  hub_path?: string,\n  feature_name?: string,\n  show_orphans?: boolean\n}",
     output:

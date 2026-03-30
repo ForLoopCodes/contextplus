@@ -1,11 +1,20 @@
-// Bundled skeleton view of all files linked from a hub map-of-content
-// FEATURE: Hierarchical context management via feature hub graph
+// Feature hub ranking and retrieval with semantic keyword and hybrid modes
+// FEATURE: Hub discovery scoring and full-project fallback context exploration
 
-import { resolve, extname } from "path";
 import { readFile, stat } from "fs/promises";
-import { parseHubFile, discoverHubs, findOrphanedFiles, type HubInfo } from "../core/hub.js";
-import { getFileSkeleton } from "./file-skeleton.js";
+import { resolve } from "path";
+import { fetchEmbedding } from "../core/embeddings.js";
+import { discoverHubs, findOrphanedFiles, parseHubFile } from "../core/hub.js";
 import { walkDirectory } from "../core/walker.js";
+
+export type HubSearchMode = "semantic" | "keyword" | "both";
+
+export interface FindHubOptions {
+  rootDir: string;
+  query?: string;
+  mode?: HubSearchMode;
+  topK?: number;
+}
 
 export interface FeatureHubOptions {
   rootDir: string;
@@ -14,121 +23,173 @@ export interface FeatureHubOptions {
   showOrphans?: boolean;
 }
 
-async function fileExists(p: string): Promise<boolean> {
+interface RankedHub {
+  path: string;
+  title: string;
+  links: number;
+  semanticScore: number;
+  keywordScore: number;
+  totalScore: number;
+  summary: string;
+}
+
+function splitTerms(text: string): string[] {
+  return text
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .toLowerCase()
+    .split(/[^a-z0-9_]+/)
+    .filter((token) => token.length > 1);
+}
+
+function keywordCoverage(queryTerms: Set<string>, content: string): number {
+  if (queryTerms.size === 0) return 0;
+  const terms = new Set(splitTerms(content));
+  let matched = 0;
+  for (const term of queryTerms) if (terms.has(term)) matched += 1;
+  return matched / queryTerms.size;
+}
+
+function cosine(a: number[], b: number[]): number {
+  const len = Math.min(a.length, b.length);
+  if (len === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < len; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+async function fileExists(path: string): Promise<boolean> {
   try {
-    await stat(p);
+    await stat(path);
     return true;
   } catch {
     return false;
   }
 }
 
+async function buildHubSummary(rootDir: string, hubPath: string): Promise<{ title: string; links: number; summary: string }> {
+  const info = await parseHubFile(resolve(rootDir, hubPath));
+  const linkText = info.links.map((link) => `${link.target} ${link.description ?? ""}`).join(" ");
+  return { title: info.title, links: info.links.length, summary: `${hubPath} ${info.title} ${linkText}`.trim() };
+}
+
+async function getAllHubContext(rootDir: string): Promise<string> {
+  const hubs = await discoverHubs(rootDir);
+  if (hubs.length === 0) return "No hub files found.";
+  const lines: string[] = [`All hubs (${hubs.length}):`, ""];
+  for (const hubPath of hubs) {
+    const info = await parseHubFile(resolve(rootDir, hubPath));
+    lines.push(`${hubPath} | ${info.title} | ${info.links.length} links`);
+    for (const link of info.links) lines.push(`  - [[${link.target}${link.description ? `|${link.description}` : ""}]]`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+function scoreByMode(mode: HubSearchMode, semanticScore: number, keywordScore: number): number {
+  if (mode === "semantic") return semanticScore;
+  if (mode === "keyword") return keywordScore;
+  return semanticScore * 0.7 + keywordScore * 0.3;
+}
+
+async function rankHubs(rootDir: string, query: string, mode: HubSearchMode, topK: number): Promise<RankedHub[]> {
+  const hubs = await discoverHubs(rootDir);
+  if (hubs.length === 0) return [];
+  const summaries = await Promise.all(hubs.map((hubPath) => buildHubSummary(rootDir, hubPath)));
+  const queryTerms = new Set(splitTerms(query));
+  const [queryVector] = await fetchEmbedding(query);
+  const summaryVectors = await fetchEmbedding(summaries.map((item) => item.summary));
+  return summaries
+    .map((item, index) => {
+      const semanticScore = Math.max(cosine(queryVector, summaryVectors[index]), 0);
+      const keywordScore = keywordCoverage(queryTerms, item.summary);
+      return {
+        path: hubs[index],
+        title: item.title,
+        links: item.links,
+        semanticScore,
+        keywordScore,
+        totalScore: scoreByMode(mode, semanticScore, keywordScore),
+        summary: item.summary,
+      };
+    })
+    .sort((a, b) => b.totalScore - a.totalScore)
+    .slice(0, Math.max(1, topK));
+}
+
+export async function findHub(options: FindHubOptions): Promise<string> {
+  const mode = options.mode ?? "both";
+  const topK = options.topK ?? 5;
+  if (!options.query?.trim()) return getAllHubContext(options.rootDir);
+  const ranked = await rankHubs(options.rootDir, options.query, mode, topK);
+  if (ranked.length === 0) return "No hub files found.";
+  const lines = [`Top ${ranked.length} hubs for "${options.query}" (${mode} mode):`, ""];
+  for (let i = 0; i < ranked.length; i++) {
+    const hub = ranked[i];
+    lines.push(`${i + 1}. ${hub.path} (${Math.round(hub.totalScore * 1000) / 10}%)`);
+    lines.push(`   Title: ${hub.title} | Links: ${hub.links}`);
+    lines.push(`   Semantic: ${Math.round(hub.semanticScore * 1000) / 10}% | Keyword: ${Math.round(hub.keywordScore * 1000) / 10}%`);
+    lines.push(`   Status: ${await fileExists(resolve(options.rootDir, hub.path)) ? "ok" : "missing"}`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
 async function findHubByName(rootDir: string, name: string): Promise<string | null> {
   const hubs = await discoverHubs(rootDir);
   const lower = name.toLowerCase();
-
-  const exact = hubs.find((h) => h.toLowerCase() === `${lower}.md` || h.toLowerCase().endsWith(`/${lower}.md`));
+  const exact = hubs.find((hub) => hub.toLowerCase() === `${lower}.md` || hub.toLowerCase().endsWith(`/${lower}.md`));
   if (exact) return exact;
-
-  const partial = hubs.find((h) => h.toLowerCase().includes(lower));
-  return partial ?? null;
+  return hubs.find((hub) => hub.toLowerCase().includes(lower)) ?? null;
 }
 
 export async function getFeatureHub(options: FeatureHubOptions): Promise<string> {
-  const { rootDir, showOrphans } = options;
-  const out: string[] = [];
-
-  if (!options.hubPath && !options.featureName && !showOrphans) {
-    const hubs = await discoverHubs(rootDir);
-    if (hubs.length === 0) {
-      return "No hub files found. Create a .md file with [[path/to/file]] links to establish a feature hub.";
-    }
-    out.push(`Feature Hubs (${hubs.length}):`);
-    out.push("");
-    for (const h of hubs) {
-      const info = await parseHubFile(resolve(rootDir, h));
-      out.push(`  ${h} | ${info.title} | ${info.links.length} links`);
-    }
-    return out.join("\n");
-  }
-
-  if (showOrphans) {
-    const entries = await walkDirectory({ rootDir, depthLimit: 10 });
-    const filePaths = entries.filter((e) => !e.isDirectory).map((e) => e.relativePath);
-    const orphans = await findOrphanedFiles(rootDir, filePaths);
+  if (options.showOrphans) {
+    const entries = await walkDirectory({ rootDir: options.rootDir, depthLimit: 10 });
+    const files = entries.filter((entry) => !entry.isDirectory).map((entry) => entry.relativePath);
+    const orphans = await findOrphanedFiles(options.rootDir, files);
     if (orphans.length === 0) return "No orphaned files. All source files are linked to a hub.";
-
-    out.push(`Orphaned Files (${orphans.length}):`);
-    out.push("These files are not linked to any feature hub:");
-    out.push("");
-    for (const o of orphans) out.push(`  ⚠ ${o}`);
-    out.push("");
-    out.push("Fix: Add [[" + orphans[0] + "]] to the appropriate hub .md file.");
-    return out.join("\n");
+    return [`Orphaned Files (${orphans.length}):`, "", ...orphans.map((path) => `  - ${path}`)].join("\n");
   }
-
-  let hubRelPath = options.hubPath;
-  if (!hubRelPath && options.featureName) {
-    hubRelPath = (await findHubByName(rootDir, options.featureName)) ?? undefined;
-    if (!hubRelPath) {
-      return `No hub found for feature "${options.featureName}". Available hubs:\n` +
-        (await discoverHubs(rootDir)).map((h) => `  - ${h}`).join("\n") || "  (none)";
+  if (!options.hubPath && !options.featureName) {
+    const hubs = await discoverHubs(options.rootDir);
+    if (hubs.length === 0) return "No hub files found.";
+    const lines = [`Feature Hubs (${hubs.length}):`, ""];
+    for (const hubPath of hubs) {
+      const info = await parseHubFile(resolve(options.rootDir, hubPath));
+      lines.push(`  ${hubPath} | ${info.title} | ${info.links.length} links`);
     }
+    return lines.join("\n");
   }
-
-  if (!hubRelPath) return "Provide hub_path, feature_name, or set show_orphans=true.";
-
-  const hubFull = resolve(rootDir, hubRelPath);
-  if (!(await fileExists(hubFull))) {
-    return `Hub file not found: ${hubRelPath}`;
-  }
-
-  const hub = await parseHubFile(hubFull);
-
-  out.push(`Hub: ${hub.title}`);
-  out.push(`Path: ${hubRelPath}`);
-  out.push(`Links: ${hub.links.length}`);
-  if (hub.crossLinks.length > 0) {
-    out.push(`Cross-links: ${hub.crossLinks.map((c) => c.hubName).join(", ")}`);
-  }
-  out.push("");
-  out.push("---");
-  out.push("");
-
-  const resolved: string[] = [];
+  const hubPath = options.hubPath ?? await findHubByName(options.rootDir, options.featureName ?? "");
+  if (!hubPath) return `No hub found for feature "${options.featureName}".`;
+  const fullPath = resolve(options.rootDir, hubPath);
+  if (!await fileExists(fullPath)) return `Hub file not found: ${hubPath}`;
+  const hub = await parseHubFile(fullPath);
+  const lines = [`Hub: ${hub.title}`, `Path: ${hubPath}`, `Links: ${hub.links.length}`, ""];
   const missing: string[] = [];
-
   for (const link of hub.links) {
-    const linkFull = resolve(rootDir, link.target);
-    if (await fileExists(linkFull)) {
-      resolved.push(link.target);
-    } else {
-      missing.push(link.target);
-    }
+    const targetPath = resolve(options.rootDir, link.target);
+    const exists = await fileExists(targetPath);
+    lines.push(`- ${link.target}${link.description ? ` | ${link.description}` : ""}${exists ? "" : " | missing"}`);
+    if (!exists) missing.push(link.target);
   }
-
-  for (const filePath of resolved) {
-    const ext = extname(filePath);
-    const desc = hub.links.find((l) => l.target === filePath)?.description;
-
-    if (desc) out.push(`## ${filePath} - ${desc}`);
-    else out.push(`## ${filePath}`);
-
-    try {
-      const skeleton = await getFileSkeleton({ rootDir, filePath });
-      out.push(skeleton);
-    } catch {
-      const content = await readFile(resolve(rootDir, filePath), "utf-8");
-      out.push(content.split("\n").slice(0, 20).join("\n"));
-    }
-    out.push("");
-  }
-
   if (missing.length > 0) {
-    out.push("---");
-    out.push(`Missing Links (${missing.length}):`);
-    for (const m of missing) out.push(`  ✗ ${m}`);
+    lines.push("", `Missing Links (${missing.length})`);
+    for (const item of missing) lines.push(`  - ${item}`);
   }
+  return lines.join("\n");
+}
 
-  return out.join("\n");
+export async function readHubContent(rootDir: string, hubPath: string): Promise<string> {
+  const fullPath = resolve(rootDir, hubPath);
+  if (!await fileExists(fullPath)) return `Hub not found: ${hubPath}`;
+  return readFile(fullPath, "utf-8");
 }

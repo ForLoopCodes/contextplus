@@ -15,33 +15,33 @@ The MCP server is built with TypeScript and communicates over stdio using the Mo
 - \`parser.ts\` - Multi-language symbol extraction via tree-sitter AST with regex fallback. Supports 14+ languages.
 - \`tree-sitter.ts\` - WASM grammar loader for 43 file extensions using web-tree-sitter 0.20.8.
 - \`walker.ts\` - Gitignore-aware recursive directory traversal with depth and target path control.
-- \`embeddings.ts\` - Ollama vector embedding engine with disk cache, cosine similarity search, and API key support.
+- \`embeddings.ts\` - Ollama/OpenAI-compatible vector embedding engine backed by vector DB persistence.
 
 **Tools Layer** (\`src/tools/\`):
 
-- \`context-tree.ts\` - Token-aware structural tree with symbol line ranges and Level 0/1/2 pruning.
-- \`file-skeleton.ts\` - Function signatures with line ranges, without reading full bodies.
-- \`semantic-search.ts\` - Ollama-powered semantic file search with symbol definition lines and 60s cache TTL.
-- \`semantic-identifiers.ts\` - Identifier-level semantic search returning ranked definitions + call chains with line numbers.
-- \`semantic-navigate.ts\` - Browse-by-meaning navigator using spectral clustering and Ollama labeling.
+- \`context-tree.ts\` - \`tree\` tool implementation for token-aware structural mapping.
+- \`file-skeleton.ts\` - \`skeleton\` tool implementation for signatures and type surfaces.
+- \`search.ts\` - Unified \`search\` tool for file and identifier retrieval.
+- \`semantic-navigate.ts\` - \`cluster\` tool implementation for spectral semantic grouping.
 - \`blast-radius.ts\` - Symbol usage tracer across the entire codebase.
-- \`static-analysis.ts\` - Native linter runner (tsc, eslint, py_compile, cargo check, go vet).
-- \`propose-commit.ts\` - Code gatekeeper validating headers, FEATURE tag, no inline comments, nesting, file length.
-- \`feature-hub.ts\` - Obsidian-style feature hub navigator with bundled skeleton views.
-- \`memory-tools.ts\` - Memory graph MCP wrappers (upsert, relate, search, prune, interlink, traverse).
+- \`static-analysis.ts\` - \`lint\` runner with project/file skill scoring output.
+- \`propose-commit.ts\` - \`checkpoint\` tool for validated writes with local restore points.
+- \`feature-hub.ts\` - \`find_hub\` ranking and full-project hub context fallback.
+- \`memory-tools.ts\` - Memory graph wrappers for create/search/explore/bulk/update/delete flows.
+- \`init.ts\` - Project bootstrap tool for \`.contextplus\` directories and context snapshot.
 
-The memory graph is a **Retrieval-Augmented Generation (RAG)** system. Agents MUST use \`search_memory_graph\` at the start of every task to retrieve prior context, and persist learnings with \`upsert_memory_node\` and \`create_relation\` after completing work. This prevents redundant exploration and builds cumulative knowledge across sessions.
+The memory graph is a **Retrieval-Augmented Generation (RAG)** system. Agents SHOULD use \`search_memory\` early in each task to retrieve prior context, and persist learnings with \`create_memory\` and \`create_relation\` after completing work. Stale links are pruned automatically before graph access.
 
 **Core Layer** (continued):
 
 - \`hub.ts\` - Wikilink parser for \`[[path]]\` links, cross-link tags, hub discovery, orphan detection.
-- \`memory-graph.ts\` - In-memory property graph with JSON persistence, decay scoring, and auto-similarity edges.
+- \`memory-graph.ts\` - Graph metadata + markdown node files + vector DB-backed semantic retrieval.
 
 **Git Layer** (\`src/git/\`):
 
 - \`shadow.ts\` - Shadow restore point system for undo without touching git history.
 
-**Entry Point**: \`src/index.ts\` registers 17 MCP tools and starts the stdio transport. Accepts an optional CLI argument for the target project root directory (defaults to \`process.cwd()\`).
+**Entry Point**: \`src/index.ts\` registers 18 MCP tools and starts the stdio transport. Accepts an optional CLI argument for the target project root directory (defaults to \`process.cwd()\`).
 
 ## Environment Variables
 
@@ -55,18 +55,18 @@ The memory graph is a **Retrieval-Augmented Generation (RAG)** system. Agents MU
 | \`CONTEXTPLUS_EMBED_TRACKER_MAX_FILES\`   | \`8\`                | Max changed files per tracker tick (hard-capped to 5-10)      |
 | \`CONTEXTPLUS_EMBED_TRACKER_DEBOUNCE_MS\` | \`700\`              | Debounce before applying tracker refresh                      |
 
-Runtime cache: \`.mcp_data/\` is created at MCP startup and stores reusable embedding vectors for files, identifiers, and call sites. A realtime tracker watches file updates and refreshes changed function/file embeddings incrementally.
+Runtime storage: \`.contextplus/\` is created by \`init\` and stores hubs, memory graph data, and vector DB embeddings. A realtime tracker can refresh changed function/file embeddings incrementally.
 
 ## Fast Execute Mode (Mandatory)
 
 Default to execution-first behavior. Use minimal tokens, minimal narration, and maximum tool leverage.
 
-1. Skip long planning prose. Start with lightweight scoping: \`get_context_tree\` and \`get_file_skeleton\`.
+1. Skip long planning prose. Start with lightweight scoping: \`tree\` and \`skeleton\`.
 2. Run independent discovery operations in parallel whenever possible (for example, multiple searches/reads).
 3. Prefer structural tools over full-file reads to conserve context.
-4. Before modifying or deleting symbols, run \`get_blast_radius\`.
-5. Write changes through \`propose_commit\` only.
-6. Run \`run_static_analysis\` once after edits, or once per changed module for larger refactors.
+4. Before modifying or deleting symbols, run \`blast_radius\`.
+5. Write changes through \`checkpoint\`.
+6. Run \`lint\` once after edits, or once per changed module for larger refactors.
 
 ### Execution Rules
 
@@ -79,7 +79,7 @@ Default to execution-first behavior. Use minimal tokens, minimal narration, and 
 ### Token-Efficiency Rules
 
 1. Treat 100 effective tokens as better than 1000 vague tokens.
-2. Use high-signal tool calls first (\`get_file_skeleton\`, \`get_context_tree\`, \`get_blast_radius\`).
+2. Use high-signal tool calls first (\`skeleton\`, \`tree\`, \`blast_radius\`).
 3. Read full file bodies only when signatures/structure are insufficient.
 4. Avoid repeated scans of unchanged areas.
 5. Prefer direct edits + deterministic validation over extended speculative analysis.
@@ -129,25 +129,26 @@ Strict order within every file:
 
 ## Tool Reference
 
-| Tool                         | When to Use                                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------------- |
-| \`get_context_tree\`           | Start of every task. Map files + symbols with line ranges.                         |
-| \`semantic_navigate\`          | Browse codebase by meaning, not directory structure.                               |
-| \`get_file_skeleton\`          | MUST run before full reads. Get signatures + line ranges first.                    |
-| \`semantic_code_search\`       | Find relevant files by concept with symbol definition lines.                       |
-| \`semantic_identifier_search\` | Find closest functions/classes/variables and ranked call chains with line numbers. |
-| \`get_blast_radius\`           | Before deleting or modifying any symbol.                                           |
-| \`run_static_analysis\`        | After writing code. Catch dead code deterministically.                             |
-| \`propose_commit\`             | The ONLY way to save files. Validates before writing.                              |
-| \`list_restore_points\`        | See undo history.                                                                  |
-| \`undo_change\`                | Revert a bad AI change without touching git.                                       |
-| \`get_feature_hub\`            | Browse feature graph hubs. Find orphaned files.                                    |
-| \`upsert_memory_node\`         | Create/update memory nodes (concept, file, symbol, note) with auto-embedding.      |
-| \`create_relation\`            | Create typed edges between memory nodes (depends_on, implements, etc).             |
-| \`search_memory_graph\`        | Semantic search + graph traversal across 1st/2nd-degree neighbors.                 |
-| \`prune_stale_links\`          | Remove decayed edges (e^(-λt)) and orphan nodes periodically.                      |
-| \`add_interlinked_context\`    | Bulk-add nodes with auto-similarity linking (cosine ≥ 0.72).                       |
-| \`retrieve_with_traversal\`    | Start from a node, walk outward, return scored neighbors by decay and depth.       |
+| Tool              | When to Use                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| \`init\`            | Bootstrap \`.contextplus\` structure and context snapshot for a project.            |
+| \`tree\`            | Start of every task. Map files + symbols with line ranges.                        |
+| \`cluster\`         | Browse codebase by meaning, not directory structure.                              |
+| \`skeleton\`        | Run before full reads. Get signatures + line ranges first.                        |
+| \`search\`          | Unified semantic/keyword search across files, identifiers, or both.               |
+| \`blast_radius\`    | Before deleting or modifying any symbol.                                           |
+| \`lint\`            | After writing code. Catch dead code and get skill scoring.                        |
+| \`checkpoint\`      | Save file changes with validation and local restore-point creation.                |
+| \`restore_points\`  | See local restore history.                                                         |
+| \`restore\`         | Revert to a specific restore point without touching git history.                   |
+| \`find_hub\`        | Rank hubs by query or list all hub context when query is omitted.                 |
+| \`create_memory\`   | Create/update memory nodes with embedding refresh.                                 |
+| \`create_relation\` | Create typed edges between memory nodes (depends_on, implements, etc).            |
+| \`search_memory\`   | Semantic/keyword memory search with neighborhood traversal.                        |
+| \`explore_memory\`  | Traverse outward from a known memory node id.                                      |
+| \`bulk_memory\`     | Bulk-add nodes and optional auto-linking.                                          |
+| \`update_memory\`   | Update existing memory content and refresh embeddings.                             |
+| \`delete_memory\`   | Delete nodes or relations from the memory graph.                                   |
 
 ## Anti-Patterns to Avoid
 

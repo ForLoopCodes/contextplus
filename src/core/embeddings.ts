@@ -2,8 +2,9 @@
 // Supports Ollama (local) and OpenAI-compatible APIs (Gemini, OpenAI, etc.)
 // Indexes file headers and symbols, caches embeddings to disk for speed
 
-import { readFile, writeFile, mkdir } from "fs/promises";
+import { mkdir } from "fs/promises";
 import { join } from "path";
+import { deleteNamespace, deleteVectors, listVectorKeys, listVectors, upsertVectors } from "./vector-db.js";
 
 const EMBED_TIMEOUT_MS = 60_000;
 let embedAbortController = new AbortController();
@@ -74,6 +75,12 @@ export interface EmbeddingCache {
   [path: string]: { hash: string; vector: number[] };
 }
 
+interface EmbeddingRecord {
+  key: string;
+  hash: string;
+  vector: number[];
+}
+
 const EMBED_PROVIDER = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "ollama").toLowerCase();
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const OPENAI_EMBED_MODEL = process.env.CONTEXTPLUS_OPENAI_EMBED_MODEL ?? process.env.OPENAI_EMBED_MODEL ?? "text-embedding-3-small";
@@ -85,6 +92,9 @@ const CACHE_FILE = `embeddings-cache-${EMBED_PROVIDER}-${ACTIVE_EMBED_MODEL.repl
 const MIN_EMBED_BATCH_SIZE = 5;
 const MAX_EMBED_BATCH_SIZE = 10;
 const DEFAULT_EMBED_BATCH_SIZE = 8;
+const MIN_EMBED_BATCH_CONCURRENCY = 1;
+const MAX_EMBED_BATCH_CONCURRENCY = 8;
+const DEFAULT_EMBED_BATCH_CONCURRENCY = 1;
 const MIN_EMBED_INPUT_CHARS = 1;
 const SINGLE_INPUT_SHRINK_FACTOR = 0.75;
 const MAX_SINGLE_INPUT_RETRIES = 40;
@@ -178,6 +188,11 @@ function getEmbedRuntimeOptions(): EmbedRuntimeOptions | undefined {
 export function getEmbeddingBatchSize(): number {
   const requested = toIntegerOr(process.env.CONTEXTPLUS_EMBED_BATCH_SIZE, DEFAULT_EMBED_BATCH_SIZE);
   return Math.min(MAX_EMBED_BATCH_SIZE, Math.max(MIN_EMBED_BATCH_SIZE, requested));
+}
+
+export function getEmbeddingBatchConcurrency(): number {
+  const requested = toIntegerOr(process.env.CONTEXTPLUS_EMBED_BATCH_CONCURRENCY, DEFAULT_EMBED_BATCH_CONCURRENCY);
+  return Math.min(MAX_EMBED_BATCH_CONCURRENCY, Math.max(MIN_EMBED_BATCH_CONCURRENCY, requested));
 }
 
 export function getEmbedChunkChars(): number {
@@ -286,12 +301,24 @@ export async function fetchEmbedding(input: string | string[]): Promise<number[]
   const chunkedInputs = inputs.map(splitEmbeddingInput);
   const flattenedInputs = chunkedInputs.flat();
   const batchSize = getEmbeddingBatchSize();
-  const flattenedEmbeddings: number[][] = [];
-
+  const batches: string[][] = [];
   for (let i = 0; i < flattenedInputs.length; i += batchSize) {
-    const batch = flattenedInputs.slice(i, i + batchSize);
-    flattenedEmbeddings.push(...await embedBatchAdaptive(batch));
+    batches.push(flattenedInputs.slice(i, i + batchSize));
   }
+
+  const batchEmbeddings = new Array<number[][]>(batches.length);
+  const workerCount = Math.min(getEmbeddingBatchConcurrency(), batches.length);
+  let nextBatchIndex = 0;
+
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const batchIndex = nextBatchIndex++;
+      if (batchIndex >= batches.length) return;
+      batchEmbeddings[batchIndex] = await embedBatchAdaptive(batches[batchIndex]);
+    }
+  }));
+
+  const flattenedEmbeddings = batchEmbeddings.flat();
 
   const embeddings: number[][] = [];
   let offset = 0;
@@ -414,17 +441,41 @@ export async function ensureMcpDataDir(rootDir: string): Promise<void> {
   await mkdir(join(rootDir, CACHE_DIR), { recursive: true });
 }
 
+function cacheNamespace(fileName: string): string {
+  return `cache:${fileName}`;
+}
+
+function toEmbeddingRecordMap(records: EmbeddingRecord[]): EmbeddingCache {
+  const cache: EmbeddingCache = {};
+  for (const record of records) cache[record.key] = { hash: record.hash, vector: record.vector };
+  return cache;
+}
+
 export async function loadEmbeddingCache(rootDir: string, fileName: string): Promise<EmbeddingCache> {
-  try {
-    return JSON.parse(await readFile(join(rootDir, CACHE_DIR, fileName), "utf-8"));
-  } catch {
-    return {};
-  }
+  return toEmbeddingRecordMap(await listVectors(rootDir, cacheNamespace(fileName)));
 }
 
 export async function saveEmbeddingCache(rootDir: string, cache: EmbeddingCache, fileName: string): Promise<void> {
-  await ensureMcpDataDir(rootDir);
-  await writeFile(join(rootDir, CACHE_DIR, fileName), JSON.stringify(cache));
+  const namespace = cacheNamespace(fileName);
+  const entries = Object.entries(cache);
+  const nextKeys = new Set(entries.map(([key]) => key));
+  const staleKeys = (await listVectorKeys(rootDir, namespace)).filter((key) => !nextKeys.has(key));
+
+  if (staleKeys.length > 0) {
+    await deleteVectors(rootDir, namespace, staleKeys);
+  }
+
+  if (entries.length > 0) {
+    await upsertVectors(
+      rootDir,
+      namespace,
+      entries.map(([key, value]) => ({ key, hash: value.hash, vector: value.vector })),
+    );
+  }
+}
+
+export async function clearEmbeddingCache(rootDir: string, fileName: string): Promise<void> {
+  await deleteNamespace(rootDir, cacheNamespace(fileName));
 }
 
 function formatLineRange(line: number, endLine?: number): string {

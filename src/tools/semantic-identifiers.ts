@@ -6,6 +6,7 @@ import { walkDirectory } from "../core/walker.js";
 import { analyzeFile, flattenSymbols, isSupportedFile } from "../core/parser.js";
 import {
   fetchEmbedding,
+  getEmbeddingBatchConcurrency,
   getEmbeddingBatchSize,
   loadEmbeddingCache,
   saveEmbeddingCache,
@@ -434,10 +435,24 @@ export async function refreshIdentifierEmbeddings(options: { rootDir: string; re
 
   const cache = await loadEmbeddingCache(options.rootDir, IDENTIFIER_CACHE_FILE);
   const pending: { key: string; hash: string; text: string }[] = [];
+  const docsPerPath = new Array<IdentifierDoc[]>(uniquePaths.length);
+  const prepConcurrency = Math.min(uniquePaths.length, Math.max(1, getEmbeddingBatchConcurrency() * 4));
+  let nextPathIndex = 0;
 
   for (const relativePath of uniquePaths) {
     removeFileScopedCacheEntries(cache, relativePath);
-    const docs = await buildIdentifierDocsForFile(options.rootDir, relativePath);
+  }
+
+  await Promise.all(Array.from({ length: prepConcurrency }, async () => {
+    while (true) {
+      const pathIndex = nextPathIndex++;
+      if (pathIndex >= uniquePaths.length) return;
+      docsPerPath[pathIndex] = await buildIdentifierDocsForFile(options.rootDir, uniquePaths[pathIndex]);
+    }
+  }));
+
+  for (let i = 0; i < uniquePaths.length; i++) {
+    const docs = docsPerPath[i] ?? [];
     for (const doc of docs) {
       const key = `id:${doc.id}`;
       const hash = hashContent(doc.text);

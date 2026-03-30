@@ -1,0 +1,406 @@
+{
+  "nodes": {
+    "mn-1774873271691-c9dftt": {
+      "id": "mn-1774873271691-c9dftt",
+      "type": "concept",
+      "label": "Auth Flow",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271691-c9dftt-auth-flow.md",
+      "createdAt": 1774873271691,
+      "lastAccessed": 1774873271691,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873271735-p32jzu": {
+      "id": "mn-1774873271735-p32jzu",
+      "type": "note",
+      "label": "Test Note",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271735-p32jzu-test-note.md",
+      "createdAt": 1774873271735,
+      "lastAccessed": 1774873271751,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873271766-5jf11n": {
+      "id": "mn-1774873271766-5jf11n",
+      "type": "file",
+      "label": "config.ts",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271766-5jf11n-config-ts.md",
+      "createdAt": 1774873271766,
+      "lastAccessed": 1774873271766,
+      "accessCount": 1,
+      "metadata": {
+        "language": "typescript"
+      }
+    },
+    "mn-1774873271783-ecbfi5": {
+      "id": "mn-1774873271783-ecbfi5",
+      "type": "concept",
+      "label": "Edge A",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271783-ecbfi5-edge-a.md",
+      "createdAt": 1774873271783,
+      "lastAccessed": 1774873272270,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873271800-2bens7": {
+      "id": "mn-1774873271800-2bens7",
+      "type": "concept",
+      "label": "Edge B",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271800-2bens7-edge-b.md",
+      "createdAt": 1774873271800,
+      "lastAccessed": 1774873272271,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873271819-7ket78": {
+      "id": "mn-1774873271819-7ket78",
+      "type": "symbol",
+      "label": "Dup A",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271819-7ket78-dup-a.md",
+      "createdAt": 1774873271819,
+      "lastAccessed": 1774873271889,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873271838-lj6hek": {
+      "id": "mn-1774873271838-lj6hek",
+      "type": "symbol",
+      "label": "Dup B",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271838-lj6hek-dup-b.md",
+      "createdAt": 1774873271838,
+      "lastAccessed": 1774873271889,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873271856-qgghkw": {
+      "id": "mn-1774873271856-qgghkw",
+      "type": "concept",
+      "label": "Search Target",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271856-qgghkw-search-target.md",
+      "createdAt": 1774873271856,
+      "lastAccessed": 1774873271889,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873271899-x39qgy": {
+      "id": "mn-1774873271899-x39qgy",
+      "type": "concept",
+      "label": "Nav Root",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271899-x39qgy-nav-root.md",
+      "createdAt": 1774873271899,
+      "lastAccessed": 1774873271942,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873271916-o28xez": {
+      "id": "mn-1774873271916-o28xez",
+      "type": "concept",
+      "label": "Nav Child",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271916-o28xez-nav-child.md",
+      "createdAt": 1774873271916,
+      "lastAccessed": 1774873271942,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873271946-um5hw1": {
+      "id": "mn-1774873271946-um5hw1",
+      "type": "note",
+      "label": "Prune A",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271946-um5hw1-prune-a.md",
+      "createdAt": 1774873271946,
+      "lastAccessed": 1774873272270,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873271964-7bzxfb": {
+      "id": "mn-1774873271964-7bzxfb",
+      "type": "note",
+      "label": "Prune B",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271964-7bzxfb-prune-b.md",
+      "createdAt": 1774873271964,
+      "lastAccessed": 1774873271964,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873271980-ugpzd6": {
+      "id": "mn-1774873271980-ugpzd6",
+      "type": "concept",
+      "label": "Interlink A",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271980-ugpzd6-interlink-a.md",
+      "createdAt": 1774873271980,
+      "lastAccessed": 1774873271980,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873271996-u3iqy2": {
+      "id": "mn-1774873271996-u3iqy2",
+      "type": "concept",
+      "label": "Interlink B",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873271996-u3iqy2-interlink-b.md",
+      "createdAt": 1774873271996,
+      "lastAccessed": 1774873271996,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272011-w40kkb": {
+      "id": "mn-1774873272011-w40kkb",
+      "type": "note",
+      "label": "Interlink Note",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272011-w40kkb-interlink-note.md",
+      "createdAt": 1774873272011,
+      "lastAccessed": 1774873272270,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873272068-p8p2yv": {
+      "id": "mn-1774873272068-p8p2yv",
+      "type": "concept",
+      "label": "No Link A",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272068-p8p2yv-no-link-a.md",
+      "createdAt": 1774873272068,
+      "lastAccessed": 1774873272068,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272083-7ots4e": {
+      "id": "mn-1774873272083-7ots4e",
+      "type": "concept",
+      "label": "No Link B",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272083-7ots4e-no-link-b.md",
+      "createdAt": 1774873272083,
+      "lastAccessed": 1774873272083,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272097-7wnw1r": {
+      "id": "mn-1774873272097-7wnw1r",
+      "type": "concept",
+      "label": "Traversal Root",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272097-7wnw1r-traversal-root.md",
+      "createdAt": 1774873272097,
+      "lastAccessed": 1774873272141,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873272112-dihum0": {
+      "id": "mn-1774873272112-dihum0",
+      "type": "symbol",
+      "label": "Traversal Child 1",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272112-dihum0-traversal-child-1.md",
+      "createdAt": 1774873272112,
+      "lastAccessed": 1774873272143,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272126-h947j4": {
+      "id": "mn-1774873272126-h947j4",
+      "type": "symbol",
+      "label": "Traversal Child 2",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272126-h947j4-traversal-child-2.md",
+      "createdAt": 1774873272126,
+      "lastAccessed": 1774873272144,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272147-siuk36": {
+      "id": "mn-1774873272147-siuk36",
+      "type": "concept",
+      "label": "Filter Root",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272147-siuk36-filter-root.md",
+      "createdAt": 1774873272147,
+      "lastAccessed": 1774873272194,
+      "accessCount": 2,
+      "metadata": {}
+    },
+    "mn-1774873272163-2qrxay": {
+      "id": "mn-1774873272163-2qrxay",
+      "type": "symbol",
+      "label": "Filter Dep",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272163-2qrxay-filter-dep.md",
+      "createdAt": 1774873272163,
+      "lastAccessed": 1774873272195,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272179-nigi6v": {
+      "id": "mn-1774873272179-nigi6v",
+      "type": "note",
+      "label": "Filter Ref",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272179-nigi6v-filter-ref.md",
+      "createdAt": 1774873272179,
+      "lastAccessed": 1774873272179,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272200-c0nc70": {
+      "id": "mn-1774873272200-c0nc70",
+      "type": "concept",
+      "label": "MCP Test Node",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272200-c0nc70-mcp-test-node.md",
+      "createdAt": 1774873272200,
+      "lastAccessed": 1774873272200,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272219-gm9lna": {
+      "id": "mn-1774873272219-gm9lna",
+      "type": "concept",
+      "label": "Rel MCP A",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272219-gm9lna-rel-mcp-a.md",
+      "createdAt": 1774873272219,
+      "lastAccessed": 1774873272219,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272236-7nuatl": {
+      "id": "mn-1774873272236-7nuatl",
+      "type": "concept",
+      "label": "Rel MCP B",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272236-7nuatl-rel-mcp-b.md",
+      "createdAt": 1774873272236,
+      "lastAccessed": 1774873272236,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272274-y59jwt": {
+      "id": "mn-1774873272274-y59jwt",
+      "type": "note",
+      "label": "Bulk A",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272274-y59jwt-bulk-a.md",
+      "createdAt": 1774873272274,
+      "lastAccessed": 1774873272274,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272290-baba5h": {
+      "id": "mn-1774873272290-baba5h",
+      "type": "note",
+      "label": "Bulk B",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272290-baba5h-bulk-b.md",
+      "createdAt": 1774873272290,
+      "lastAccessed": 1774873272290,
+      "accessCount": 1,
+      "metadata": {}
+    },
+    "mn-1774873272362-hdcbx9": {
+      "id": "mn-1774873272362-hdcbx9",
+      "type": "concept",
+      "label": "Trav MCP Root",
+      "contentPath": ".contextplus/memories/nodes/mn-1774873272362-hdcbx9-trav-mcp-root.md",
+      "createdAt": 1774873272362,
+      "lastAccessed": 1774873272378,
+      "accessCount": 2,
+      "metadata": {}
+    }
+  },
+  "edges": {
+    "me-1774873271933-9o411r": {
+      "id": "me-1774873271933-9o411r",
+      "source": "mn-1774873271899-x39qgy",
+      "target": "mn-1774873271916-o28xez",
+      "relation": "contains",
+      "weight": 1,
+      "createdAt": 1774873271933,
+      "metadata": {}
+    },
+    "me-1774873272141-3ghhys": {
+      "id": "me-1774873272141-3ghhys",
+      "source": "mn-1774873272097-7wnw1r",
+      "target": "mn-1774873272112-dihum0",
+      "relation": "contains",
+      "weight": 1,
+      "createdAt": 1774873272141,
+      "metadata": {}
+    },
+    "me-1774873272141-9iyty9": {
+      "id": "me-1774873272141-9iyty9",
+      "source": "mn-1774873272097-7wnw1r",
+      "target": "mn-1774873272126-h947j4",
+      "relation": "contains",
+      "weight": 1,
+      "createdAt": 1774873272141,
+      "metadata": {}
+    },
+    "me-1774873272194-5m7t3n": {
+      "id": "me-1774873272194-5m7t3n",
+      "source": "mn-1774873272147-siuk36",
+      "target": "mn-1774873272163-2qrxay",
+      "relation": "depends_on",
+      "weight": 1,
+      "createdAt": 1774873272194,
+      "metadata": {}
+    },
+    "me-1774873272194-kughs6": {
+      "id": "me-1774873272194-kughs6",
+      "source": "mn-1774873272147-siuk36",
+      "target": "mn-1774873272179-nigi6v",
+      "relation": "references",
+      "weight": 1,
+      "createdAt": 1774873272194,
+      "metadata": {}
+    },
+    "me-1774873272250-j7evm5": {
+      "id": "me-1774873272250-j7evm5",
+      "source": "mn-1774873272219-gm9lna",
+      "target": "mn-1774873272236-7nuatl",
+      "relation": "implements",
+      "weight": 1,
+      "createdAt": 1774873272250,
+      "metadata": {}
+    },
+    "me-1774873272305-xq4tzt": {
+      "id": "me-1774873272305-xq4tzt",
+      "source": "mn-1774873272274-y59jwt",
+      "target": "mn-1774873271735-p32jzu",
+      "relation": "similar_to",
+      "weight": 0.7465303747910469,
+      "createdAt": 1774873272305,
+      "metadata": {}
+    },
+    "me-1774873272314-rg5tbk": {
+      "id": "me-1774873272314-rg5tbk",
+      "source": "mn-1774873272274-y59jwt",
+      "target": "mn-1774873271946-um5hw1",
+      "relation": "similar_to",
+      "weight": 0.7897889984277666,
+      "createdAt": 1774873272314,
+      "metadata": {}
+    },
+    "me-1774873272315-dwwc1d": {
+      "id": "me-1774873272315-dwwc1d",
+      "source": "mn-1774873272274-y59jwt",
+      "target": "mn-1774873271964-7bzxfb",
+      "relation": "similar_to",
+      "weight": 0.7719257210679106,
+      "createdAt": 1774873272315,
+      "metadata": {}
+    },
+    "me-1774873272335-0kkqt1": {
+      "id": "me-1774873272335-0kkqt1",
+      "source": "mn-1774873272290-baba5h",
+      "target": "mn-1774873271783-ecbfi5",
+      "relation": "similar_to",
+      "weight": 0.7293958286181793,
+      "createdAt": 1774873272335,
+      "metadata": {}
+    },
+    "me-1774873272337-pbpiu3": {
+      "id": "me-1774873272337-pbpiu3",
+      "source": "mn-1774873272290-baba5h",
+      "target": "mn-1774873271819-7ket78",
+      "relation": "similar_to",
+      "weight": 0.762993545281919,
+      "createdAt": 1774873272337,
+      "metadata": {}
+    },
+    "me-1774873272338-z0bkwk": {
+      "id": "me-1774873272338-z0bkwk",
+      "source": "mn-1774873272290-baba5h",
+      "target": "mn-1774873271838-lj6hek",
+      "relation": "similar_to",
+      "weight": 0.7612576370042818,
+      "createdAt": 1774873272338,
+      "metadata": {}
+    }
+  }
+}
