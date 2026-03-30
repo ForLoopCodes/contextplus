@@ -2,7 +2,7 @@
 // Returns structural skeleton: signatures, params, return types only
 
 import { analyzeFile, isSupportedFile, type FileAnalysis } from "../core/parser.js";
-import { readFile } from "fs/promises";
+import { readFile, realpath } from "fs/promises";
 import { resolve } from "path";
 
 export interface SkeletonOptions {
@@ -33,8 +33,33 @@ function formatSignatureBlock(analysis: FileAnalysis): string {
   return lines.join("\n");
 }
 
+async function assertInsideRoot(fullPath: string, rootDir: string): Promise<void> {
+  const resolvedRoot = resolve(rootDir);
+  const resolvedPath = resolve(fullPath);
+
+  // Check the literal resolved path first (before symlink resolution)
+  if (!resolvedPath.startsWith(resolvedRoot + "/") && resolvedPath !== resolvedRoot) {
+    throw new Error(`Path escapes project root: ${resolvedPath}`);
+  }
+
+  // Also check after resolving symlinks to prevent symlink-based escapes
+  try {
+    const realRoot = await realpath(resolvedRoot);
+    const realFile = await realpath(resolvedPath);
+    if (!realFile.startsWith(realRoot + "/") && realFile !== realRoot) {
+      throw new Error(`Path escapes project root after symlink resolution: ${realFile}`);
+    }
+  } catch (err) {
+    // If realpath fails because path doesn't exist, the initial check is sufficient
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw err;
+  }
+}
+
 export async function getFileSkeleton(options: SkeletonOptions): Promise<string> {
   const fullPath = resolve(options.rootDir, options.filePath);
+
+  await assertInsideRoot(fullPath, options.rootDir);
 
   if (!isSupportedFile(fullPath)) {
     const content = await readFile(fullPath, "utf-8");
