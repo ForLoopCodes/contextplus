@@ -1,3 +1,9 @@
+# TODO List
+
+## instructions
+
+ai agents are not allowed to change this file's content without human approval, ai agents can only complete the given tasks and update the task with [x]
+
 ## v1
 
 - [ ] rename tools for better meaning
