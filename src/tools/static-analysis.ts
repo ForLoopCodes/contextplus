@@ -1,12 +1,12 @@
 // Static analysis runner using native linters and compilers
 // Delegates dead code detection to deterministic tools, not LLM guessing
 
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { stat } from "fs/promises";
 import { resolve, extname } from "path";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface StaticAnalysisOptions {
   rootDir: string;
@@ -29,9 +29,8 @@ const LINTER_MAP: Record<string, { cmd: string; args: string[] }> = {
 };
 
 async function runCommand(cmd: string, args: string[], cwd: string): Promise<LintResult> {
-  const fullCmd = `${cmd} ${args.join(" ")}`;
   try {
-    const { stdout, stderr } = await execAsync(fullCmd, { cwd, timeout: 30000, maxBuffer: 1024 * 512 });
+    const { stdout, stderr } = await execFileAsync(cmd, args, { cwd, timeout: 30000, maxBuffer: 1024 * 512 });
     return { tool: cmd, output: (stdout + stderr).trim(), exitCode: 0 };
   } catch (err: any) {
     return { tool: cmd, output: (err.stdout ?? "") + (err.stderr ?? ""), exitCode: err.code ?? 1 };
