@@ -178,6 +178,29 @@ describe("walker", () => {
         "child/important.log should be re-included by child's negation",
       );
     });
+
+    it("merges .gitignore across three levels of nesting", async () => {
+      const DEEP = join(FIXTURE_DIR, "_deep");
+      await rm(DEEP, { recursive: true, force: true });
+      await mkdir(join(DEEP, "a", "b", "c"), { recursive: true });
+      await writeFile(join(DEEP, ".gitignore"), "*.tmp\n");
+      await writeFile(join(DEEP, "a", ".gitignore"), "*.bak\n");
+      await writeFile(join(DEEP, "a", "b", ".gitignore"), "*.old\n");
+      await writeFile(join(DEEP, "a", "b", "c", "keep.txt"), "k");
+      await writeFile(join(DEEP, "a", "b", "c", "x.tmp"), "1");
+      await writeFile(join(DEEP, "a", "b", "c", "x.bak"), "2");
+      await writeFile(join(DEEP, "a", "b", "c", "x.old"), "3");
+
+      const entries = await walkDirectory({ rootDir: DEEP });
+      const paths = entries.map((e) => e.relativePath);
+
+      assert.ok(paths.includes("a/b/c/keep.txt"));
+      assert.ok(!paths.includes("a/b/c/x.tmp"), "level-0 *.tmp rule must reach level 3");
+      assert.ok(!paths.includes("a/b/c/x.bak"), "level-1 *.bak rule must reach level 3");
+      assert.ok(!paths.includes("a/b/c/x.old"), "level-2 *.old rule must reach level 3");
+
+      await rm(DEEP, { recursive: true, force: true });
+    });
   });
 
   after(async () => {
