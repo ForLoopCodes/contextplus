@@ -287,6 +287,23 @@ describe("walker", () => {
       await rm(join(ROOTS, "repos", "lacuna", "build"), { recursive: true, force: true });
       await rm(join(ROOTS, "repos", "lacuna", ".gitignore"));
     });
+
+    it("deduplicates files reachable from both the workspace and an extraRoot", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      const VEND = join(FIXTURE_DIR, "_vend");
+      await rm(VEND, { recursive: true, force: true });
+      await mkdir(join(VEND, "vendored"), { recursive: true });
+      await writeFile(join(VEND, "vendored", "lib.py"), "l");
+
+      const entries = await walkRoots({
+        rootDir: VEND,
+        extraRoots: ["vendored"],
+      });
+      const matches = entries.filter((e) => e.relativePath === "vendored/lib.py");
+      assert.equal(matches.length, 1, "file should be emitted exactly once after dedupe");
+
+      await rm(VEND, { recursive: true, force: true });
+    });
   });
 
   after(async () => {
