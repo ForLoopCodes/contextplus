@@ -97,4 +97,31 @@ describe("parseExtraRoots", () => {
     });
     assert.deepEqual(result.accepted.sort(), [join(FIX, "a"), join(FIX, "b")].sort());
   });
+
+  it("rejects symlinks that point outside the workspace root", async () => {
+    const { symlink } = await import("fs/promises");
+    const OUTSIDE = join(FIX, "..", "_outside_target");
+    await rm(OUTSIDE, { recursive: true, force: true });
+    await mkdir(OUTSIDE, { recursive: true });
+    try {
+      await symlink(OUTSIDE, join(FIX, "bad-link"));
+    } catch {
+      // If symlink creation fails (e.g., on a filesystem that doesn't support symlinks),
+      // skip the test gracefully.
+      return;
+    }
+
+    const result = parseExtraRoots({
+      argv: ["--include", "bad-link"],
+      env: {},
+      rootDir: FIX,
+    });
+
+    assert.equal(result.accepted.length, 0, "symlink to outside should be rejected");
+    assert.equal(result.warnings.length, 1);
+    assert.match(result.warnings[0], /outside/i);
+
+    await rm(join(FIX, "bad-link"));
+    await rm(OUTSIDE, { recursive: true, force: true });
+  });
 });

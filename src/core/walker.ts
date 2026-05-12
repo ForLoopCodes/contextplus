@@ -1,7 +1,7 @@
 // Gitignore-aware recursive directory walker with depth control
 // Returns filtered file paths respecting project ignore patterns (nested-gitignore-aware)
 
-import { readdir, readFile, stat } from "fs/promises";
+import { readdir, readFile, realpath, stat } from "fs/promises";
 import { join, relative, resolve, sep } from "path";
 import ignore, { type Ignore } from "ignore";
 
@@ -164,6 +164,13 @@ export interface WalkRootsOptions {
 
 export async function walkRoots(options: WalkRootsOptions): Promise<FileEntry[]> {
   const rootDir = resolve(options.rootDir);
+  let rootReal = rootDir;
+  try {
+    rootReal = await realpath(rootDir);
+  } catch {
+    // rootDir doesn't exist; fall through with unresolved value
+  }
+
   const extraRoots = options.extraRoots ?? GLOBAL_EXTRA_ROOTS;
   const seen = new Set<string>();
   const results: FileEntry[] = [];
@@ -182,18 +189,24 @@ export async function walkRoots(options: WalkRootsOptions): Promise<FileEntry[]>
   // targetPath constrains the primary walk only — extraRoots are always walked in full.
   for (const extra of extraRoots) {
     const extraAbs = resolve(rootDir, extra);
-    if (extraAbs !== rootDir && !extraAbs.startsWith(rootDir + sep)) {
+    let extraReal = extraAbs;
+    try {
+      extraReal = await realpath(extraAbs);
+    } catch {
+      // doesn't exist; will fall through to the prefix check on unresolved path
+    }
+    if (extraReal !== rootReal && !extraReal.startsWith(rootReal + sep)) {
       throw new Error(`walkRoots: extraRoot "${extra}" resolves outside workspace root`);
     }
-    const depthOffset = relative(rootDir, extraAbs).split(/[\\/]/).filter(Boolean).length;
+    const depthOffset = relative(rootReal, extraReal).split(/[\\/]/).filter(Boolean).length;
     const extraEntries = await walkDirectory({
-      rootDir: extraAbs,
+      rootDir: extraReal,
       depthLimit: options.depthLimit,
     });
     for (const entry of extraEntries) {
       if (seen.has(entry.path)) continue;
       seen.add(entry.path);
-      const workspaceRel = relative(rootDir, entry.path).replace(/\\/g, "/");
+      const workspaceRel = relative(rootReal, entry.path).replace(/\\/g, "/");
       results.push({
         path: entry.path,
         relativePath: workspaceRel,

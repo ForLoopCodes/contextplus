@@ -1,7 +1,7 @@
 // CLI/env argument parsing for the extraRoots config.
 // Pure module — no side effects, safe to import from tests.
 
-import { statSync } from "fs";
+import { realpathSync, statSync } from "fs";
 import { delimiter, isAbsolute, resolve, sep } from "path";
 
 export interface ParseExtraRootsInput {
@@ -32,6 +32,12 @@ export function parseExtraRoots(input: ParseExtraRootsInput): ParseExtraRootsRes
   const accepted: string[] = [];
   const warnings: string[] = [];
   const rootAbs = resolve(input.rootDir);
+  let rootReal = rootAbs;
+  try {
+    rootReal = realpathSync(rootAbs);
+  } catch {
+    // rootDir doesn't exist; fall through
+  }
 
   const fromCli = extractIncludeFlags(input.argv);
   const raw = fromCli.length > 0
@@ -42,18 +48,24 @@ export function parseExtraRoots(input: ParseExtraRootsInput): ParseExtraRootsRes
 
   for (const entry of raw) {
     const abs = isAbsolute(entry) ? entry : resolve(rootAbs, entry);
+    let real = abs;
+    try {
+      real = realpathSync(abs);
+    } catch {
+      // doesn't exist - statSync below will catch and warn
+    }
 
-    if (abs === rootAbs) {
+    if (real === rootReal) {
       warnings.push(`contextplus: extraRoot '${entry}' equals the workspace root — skipping`);
       continue;
     }
-    if (!abs.startsWith(rootAbs + sep)) {
+    if (!real.startsWith(rootReal + sep)) {
       warnings.push(`contextplus: extraRoot '${entry}' is outside the workspace root — skipping`);
       continue;
     }
     let stats;
     try {
-      stats = statSync(abs);
+      stats = statSync(real);
     } catch {
       warnings.push(`contextplus: extraRoot '${entry}' does not exist — skipping`);
       continue;
@@ -62,7 +74,7 @@ export function parseExtraRoots(input: ParseExtraRootsInput): ParseExtraRootsRes
       warnings.push(`contextplus: extraRoot '${entry}' is not a directory — skipping`);
       continue;
     }
-    accepted.push(abs);
+    accepted.push(real);
   }
 
   return { accepted, warnings };

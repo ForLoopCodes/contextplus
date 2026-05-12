@@ -344,6 +344,52 @@ describe("walker", () => {
         "relativePath should be rooted at the workspace, not the extraRoot",
       );
     });
+
+    it("rejects symlinked extraRoots that point outside the workspace", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      const { symlink, mkdir, rm, writeFile } = await import("fs/promises");
+      const SYM = join(FIXTURE_DIR, "_sym");
+      const EXTERNAL = join(FIXTURE_DIR, "_external");
+      await rm(SYM, { recursive: true, force: true });
+      await rm(EXTERNAL, { recursive: true, force: true });
+      await mkdir(SYM, { recursive: true });
+      await mkdir(EXTERNAL, { recursive: true });
+      await writeFile(join(EXTERNAL, "secret.txt"), "secret");
+      // Place a symlink INSIDE the workspace pointing OUTSIDE.
+      await symlink(EXTERNAL, join(SYM, "link"));
+
+      await assert.rejects(
+        () => walkRoots({ rootDir: SYM, extraRoots: ["link"] }),
+        /resolves outside workspace root/,
+      );
+
+      await rm(SYM, { recursive: true, force: true });
+      await rm(EXTERNAL, { recursive: true, force: true });
+    });
+
+    it("follows symlinked extraRoots that point inside the workspace", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      const { symlink, mkdir, rm, writeFile } = await import("fs/promises");
+      const SYM = join(FIXTURE_DIR, "_sym_inside");
+      await rm(SYM, { recursive: true, force: true });
+      await mkdir(join(SYM, "real"), { recursive: true });
+      await writeFile(join(SYM, "real", "ok.txt"), "ok");
+      await writeFile(join(SYM, ".gitignore"), "linked/\n");  // exclude symlink-named path from primary walk so the only way to see ok.txt is via the extraRoot
+      await symlink(join(SYM, "real"), join(SYM, "linked"));
+
+      const entries = await walkRoots({ rootDir: SYM, extraRoots: ["linked"] });
+      const paths = entries.map((e) => e.relativePath);
+
+      // The symlink target is INSIDE the workspace, so it should be walked.
+      // The file may appear under either the canonical path or the symlink path,
+      // depending on how realpath rewrites it. Accept either.
+      assert.ok(
+        paths.some((p) => p.endsWith("ok.txt")),
+        "ok.txt should be reachable via the symlinked extraRoot",
+      );
+
+      await rm(SYM, { recursive: true, force: true });
+    });
   });
 
   after(async () => {
