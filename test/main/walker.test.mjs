@@ -265,6 +265,28 @@ describe("walker", () => {
       // (src/ is depth 0 from lacuna, foo.py is depth 1). With offset 2 → 3.
       assert.equal(fooEntry.depth, 3, "depth should be workspace-relative, not extraRoot-relative");
     });
+
+    it("starts with a fresh ignore scope inside each extraRoot", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      await mkdir(join(ROOTS, "repos", "lacuna", "build"), { recursive: true });
+      await writeFile(join(ROOTS, "repos", "lacuna", "build", "junk.py"), "j");
+      await writeFile(join(ROOTS, "repos", "lacuna", ".gitignore"), "build/\n");
+
+      const entries = await walkRoots({
+        rootDir: ROOTS,
+        extraRoots: ["repos/lacuna"],
+      });
+      const paths = entries.map((e) => e.relativePath);
+
+      assert.ok(paths.includes("repos/lacuna/src/foo.py"));
+      assert.ok(
+        !paths.some((p) => p.includes("repos/lacuna/build")),
+        "extraRoot's own .gitignore should apply",
+      );
+
+      await rm(join(ROOTS, "repos", "lacuna", "build"), { recursive: true, force: true });
+      await rm(join(ROOTS, "repos", "lacuna", ".gitignore"));
+    });
   });
 
   after(async () => {
