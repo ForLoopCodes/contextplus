@@ -2,7 +2,7 @@
 // Returns filtered file paths respecting project ignore patterns (nested-gitignore-aware)
 
 import { readdir, readFile, stat } from "fs/promises";
-import { join, relative, resolve } from "path";
+import { join, relative, resolve, sep } from "path";
 import ignore, { type Ignore } from "ignore";
 
 export interface WalkOptions {
@@ -19,9 +19,11 @@ export interface FileEntry {
 }
 
 interface IgnoreScope {
+  scopeRoot: string;
   ig: Ignore;
-  patterns: string[];
 }
+
+type IgnoreChain = IgnoreScope[];
 
 const ALWAYS_IGNORE = new Set([
   "node_modules",
@@ -43,28 +45,37 @@ const ALWAYS_IGNORE = new Set([
   ".parcel-cache",
 ]);
 
-async function readGitignorePatterns(dir: string): Promise<string[]> {
+async function loadLocalScope(dir: string): Promise<IgnoreScope | null> {
   try {
     const content = await readFile(join(dir, ".gitignore"), "utf-8");
-    return content.split(/\r?\n/).filter((line) => line.trim() && !line.startsWith("#"));
+    return { scopeRoot: dir, ig: ignore().add(content) };
   } catch {
-    return [];
+    return null;
   }
 }
 
-async function loadScopeFor(dir: string, parent: IgnoreScope | null): Promise<IgnoreScope> {
-  const local = await readGitignorePatterns(dir);
-  if (!parent && local.length === 0) return { ig: ignore(), patterns: [] };
-  if (!parent) return { ig: ignore().add(local), patterns: local };
-  if (local.length === 0) return parent;
-  const merged = [...parent.patterns, ...local];
-  return { ig: ignore().add(merged), patterns: merged };
+function isIgnoredInChain(absPath: string, isDir: boolean, chain: IgnoreChain): boolean {
+  // Walk scopes from outermost to innermost. Each scope's patterns are evaluated
+  // against paths relative to that scope's directory. Later scopes can re-include
+  // paths that earlier scopes excluded (gitignore negation crosses scope boundaries).
+  let state: "ignored" | "included" = "included";
+  for (const scope of chain) {
+    let rel = relative(scope.scopeRoot, absPath).replace(/\\/g, "/");
+    if (!rel || rel.startsWith("..")) continue;
+    // Mark directories with a trailing slash so anchored directory patterns
+    // like `/build/` match the directory itself (and short-circuit descent).
+    if (isDir) rel += "/";
+    const result = scope.ig.test(rel);
+    if (result.unignored) state = "included";
+    else if (result.ignored) state = "ignored";
+  }
+  return state === "ignored";
 }
 
 async function walkRecursive(
   dir: string,
   rootDir: string,
-  scope: IgnoreScope,
+  chain: IgnoreChain,
   depth: number,
   maxDepth: number,
   results: FileEntry[],
@@ -77,14 +88,15 @@ async function walkRecursive(
 
     const fullPath = join(dir, entry.name);
     const relPath = relative(rootDir, fullPath).replace(/\\/g, "/");
-    if (scope.ig.ignores(relPath)) continue;
-
     const isDir = entry.isDirectory();
+    if (isIgnoredInChain(fullPath, isDir, chain)) continue;
+
     results.push({ path: fullPath, relativePath: relPath, isDirectory: isDir, depth });
 
     if (isDir) {
-      const childScope = await loadScopeFor(fullPath, scope);
-      await walkRecursive(fullPath, rootDir, childScope, depth + 1, maxDepth, results);
+      const localScope = await loadLocalScope(fullPath);
+      const childChain = localScope ? [...chain, localScope] : chain;
+      await walkRecursive(fullPath, rootDir, childChain, depth + 1, maxDepth, results);
     }
   }
 }
@@ -100,21 +112,23 @@ export async function walkDirectory(options: WalkOptions): Promise<FileEntry[]> 
     return results;
   }
 
-  const rootScope = await loadScopeFor(rootDir, null);
-  let startScope = rootScope;
+  // Build the initial chain from rootDir down to startDir so ancestor scopes apply
+  // at the start of the walk.
+  const chain: IgnoreChain = [];
+  const rootScope = await loadLocalScope(rootDir);
+  if (rootScope) chain.push(rootScope);
+
   if (startDir !== rootDir) {
-    // Build the scope chain from rootDir down to startDir so inherited rules apply.
-    const rel = relative(rootDir, startDir).split(/[\\/]/).filter(Boolean);
+    const segments = relative(rootDir, startDir).split(/[\\/]/).filter(Boolean);
     let cursor = rootDir;
-    let scope = rootScope;
-    for (const segment of rel) {
+    for (const segment of segments) {
       cursor = join(cursor, segment);
-      scope = await loadScopeFor(cursor, scope);
+      const scope = await loadLocalScope(cursor);
+      if (scope) chain.push(scope);
     }
-    startScope = scope;
   }
 
-  await walkRecursive(startDir, rootDir, startScope, 0, options.depthLimit ?? 0, results);
+  await walkRecursive(startDir, rootDir, chain, 0, options.depthLimit ?? 0, results);
   return results;
 }
 
@@ -168,10 +182,10 @@ export async function walkRoots(options: WalkRootsOptions): Promise<FileEntry[]>
   // targetPath constrains the primary walk only — extraRoots are always walked in full.
   for (const extra of extraRoots) {
     const extraAbs = resolve(rootDir, extra);
-    if (extraAbs !== rootDir && !extraAbs.startsWith(rootDir + "/")) {
+    if (extraAbs !== rootDir && !extraAbs.startsWith(rootDir + sep)) {
       throw new Error(`walkRoots: extraRoot "${extra}" resolves outside workspace root`);
     }
-    const depthOffset = relative(rootDir, extraAbs).split("/").filter(Boolean).length;
+    const depthOffset = relative(rootDir, extraAbs).split(/[\\/]/).filter(Boolean).length;
     const extraEntries = await walkDirectory({
       rootDir: extraAbs,
       depthLimit: options.depthLimit,

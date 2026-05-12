@@ -201,6 +201,31 @@ describe("walker", () => {
 
       await rm(DEEP, { recursive: true, force: true });
     });
+
+    it("respects anchored patterns scoped to a nested .gitignore", async () => {
+      const ANCHOR = join(FIXTURE_DIR, "_anchor");
+      await rm(ANCHOR, { recursive: true, force: true });
+      await mkdir(join(ANCHOR, "artifacts"), { recursive: true });
+      await mkdir(join(ANCHOR, "child", "artifacts"), { recursive: true });
+      // Workspace-level artifacts/ should NOT be excluded — only the child has the rule.
+      await writeFile(join(ANCHOR, "artifacts", "ws.txt"), "ws");
+      await writeFile(join(ANCHOR, "child", "artifacts", "junk.txt"), "junk");
+      await writeFile(join(ANCHOR, "child", "keep.txt"), "keep");
+      // Anchored pattern in child .gitignore should only affect child/artifacts/.
+      await writeFile(join(ANCHOR, "child", ".gitignore"), "/artifacts/\n");
+
+      const entries = await walkDirectory({ rootDir: ANCHOR });
+      const paths = entries.map((e) => e.relativePath);
+
+      assert.ok(paths.includes("artifacts/ws.txt"), "workspace-level artifacts/ should NOT be ignored");
+      assert.ok(paths.includes("child/keep.txt"));
+      assert.ok(
+        !paths.some((p) => p.includes("child/artifacts")),
+        "anchored /artifacts/ in child/.gitignore should ignore only child/artifacts/",
+      );
+
+      await rm(ANCHOR, { recursive: true, force: true });
+    });
   });
 
   describe("walkRoots", () => {
