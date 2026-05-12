@@ -153,6 +153,31 @@ describe("walker", () => {
         "files under child/cache should be ignored by child's .gitignore",
       );
     });
+
+    it("supports negation in a child .gitignore (re-include)", async () => {
+      // Parent ignores *.log everywhere; child re-includes important.log.
+      await writeFile(join(NESTED, ".gitignore"), "*.log\n");
+      await writeFile(join(NESTED, "root.log"), "noise");
+      await writeFile(join(NESTED, "child", "important.log"), "valuable");
+      await writeFile(join(NESTED, "child", "noise.log"), "noise");
+      await writeFile(join(NESTED, "child", ".gitignore"), "cache/\n!important.log\n");
+
+      const entries = await walkDirectory({ rootDir: NESTED });
+      const paths = entries.map((e) => e.relativePath);
+
+      assert.ok(
+        !paths.includes("root.log"),
+        "root.log should be excluded by parent rule",
+      );
+      assert.ok(
+        !paths.includes("child/noise.log"),
+        "child/noise.log should still be excluded (parent rule still applies)",
+      );
+      assert.ok(
+        paths.includes("child/important.log"),
+        "child/important.log should be re-included by child's negation",
+      );
+    });
   });
 
   after(async () => {
