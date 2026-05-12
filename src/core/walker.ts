@@ -130,3 +130,64 @@ export function groupByDirectory(entries: FileEntry[]): Map<string, FileEntry[]>
   }
   return groups;
 }
+
+let GLOBAL_EXTRA_ROOTS: string[] = [];
+
+export function setExtraRoots(paths: string[]): void {
+  GLOBAL_EXTRA_ROOTS = [...paths];
+}
+
+export function getExtraRoots(): string[] {
+  return [...GLOBAL_EXTRA_ROOTS];
+}
+
+export interface WalkRootsOptions {
+  rootDir: string;
+  extraRoots?: string[];
+  depthLimit?: number;
+  targetPath?: string;
+}
+
+export async function walkRoots(options: WalkRootsOptions): Promise<FileEntry[]> {
+  const rootDir = resolve(options.rootDir);
+  const extraRoots = options.extraRoots ?? GLOBAL_EXTRA_ROOTS;
+  const seen = new Set<string>();
+  const results: FileEntry[] = [];
+
+  const primary = await walkDirectory({
+    rootDir,
+    depthLimit: options.depthLimit,
+    targetPath: options.targetPath,
+  });
+  for (const entry of primary) {
+    if (seen.has(entry.path)) continue;
+    seen.add(entry.path);
+    results.push(entry);
+  }
+
+  // targetPath constrains the primary walk only — extraRoots are always walked in full.
+  for (const extra of extraRoots) {
+    const extraAbs = resolve(rootDir, extra);
+    if (extraAbs !== rootDir && !extraAbs.startsWith(rootDir + "/")) {
+      throw new Error(`walkRoots: extraRoot "${extra}" resolves outside workspace root`);
+    }
+    const depthOffset = relative(rootDir, extraAbs).split("/").filter(Boolean).length;
+    const extraEntries = await walkDirectory({
+      rootDir: extraAbs,
+      depthLimit: options.depthLimit,
+    });
+    for (const entry of extraEntries) {
+      if (seen.has(entry.path)) continue;
+      seen.add(entry.path);
+      const workspaceRel = relative(rootDir, entry.path).replace(/\\/g, "/");
+      results.push({
+        path: entry.path,
+        relativePath: workspaceRel,
+        isDirectory: entry.isDirectory,
+        depth: entry.depth + depthOffset,
+      });
+    }
+  }
+
+  return results;
+}

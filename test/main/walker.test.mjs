@@ -203,6 +203,70 @@ describe("walker", () => {
     });
   });
 
+  describe("walkRoots", () => {
+    const ROOTS = join(FIXTURE_DIR, "_roots");
+
+    before(async () => {
+      await rm(ROOTS, { recursive: true, force: true });
+      await mkdir(join(ROOTS, "docs"), { recursive: true });
+      await mkdir(join(ROOTS, "repos", "lacuna", "src"), { recursive: true });
+      await mkdir(join(ROOTS, "repos", "other"), { recursive: true });
+      await writeFile(join(ROOTS, ".gitignore"), "repos/\n");
+      await writeFile(join(ROOTS, "docs", "readme.md"), "d");
+      await writeFile(join(ROOTS, "repos", "lacuna", "src", "foo.py"), "f");
+      await writeFile(join(ROOTS, "repos", "other", "noise.py"), "n");
+    });
+
+    after(async () => {
+      await rm(ROOTS, { recursive: true, force: true });
+    });
+
+    it("indexes paths listed in extraRoots even when parent .gitignore excludes them", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      const entries = await walkRoots({
+        rootDir: ROOTS,
+        extraRoots: ["repos/lacuna"],
+      });
+      const paths = entries.map((e) => e.relativePath);
+
+      assert.ok(paths.includes("docs/readme.md"), "workspace files should still be indexed");
+      assert.ok(
+        paths.includes("repos/lacuna/src/foo.py"),
+        "extraRoot file should be indexed",
+      );
+      assert.ok(
+        !paths.some((p) => p.startsWith("repos/other")),
+        "repos/other (not in extraRoots) should remain ignored",
+      );
+    });
+
+    it("rejects extraRoots that resolve outside the workspace root", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      await assert.rejects(
+        () => walkRoots({ rootDir: ROOTS, extraRoots: ["../../etc"] }),
+        /resolves outside workspace root/,
+      );
+      await assert.rejects(
+        () => walkRoots({ rootDir: ROOTS, extraRoots: ["/etc"] }),
+        /resolves outside workspace root/,
+      );
+    });
+
+    it("reports workspace-relative depth for extraRoot entries", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      const entries = await walkRoots({
+        rootDir: ROOTS,
+        extraRoots: ["repos/lacuna"],
+      });
+      const fooEntry = entries.find((e) => e.relativePath === "repos/lacuna/src/foo.py");
+      assert.ok(fooEntry, "expected to find foo.py");
+      // repos/lacuna/src/foo.py: workspace depth is 3 (under repos/lacuna/src/).
+      // walkDirectory called with rootDir=<abs>/repos/lacuna gives foo.py depth=1
+      // (src/ is depth 0 from lacuna, foo.py is depth 1). With offset 2 → 3.
+      assert.equal(fooEntry.depth, 3, "depth should be workspace-relative, not extraRoot-relative");
+    });
+  });
+
   after(async () => {
     await rm(FIXTURE_DIR, { recursive: true, force: true });
   });
