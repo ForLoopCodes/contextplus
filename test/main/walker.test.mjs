@@ -129,6 +129,32 @@ describe("walker", () => {
     });
   });
 
+  describe("nested gitignore", () => {
+    const NESTED = join(FIXTURE_DIR, "_nested");
+
+    before(async () => {
+      await rm(NESTED, { recursive: true, force: true });
+      await mkdir(join(NESTED, "child", "cache"), { recursive: true });
+      await writeFile(join(NESTED, "child", "cache", "x.txt"), "cached");
+      await writeFile(join(NESTED, "child", "keep.txt"), "kept");
+      await writeFile(join(NESTED, "child", ".gitignore"), "cache/\n");
+    });
+
+    after(async () => {
+      await rm(NESTED, { recursive: true, force: true });
+    });
+
+    it("applies a child .gitignore rule inside that child", async () => {
+      const entries = await walkDirectory({ rootDir: NESTED });
+      const paths = entries.map((e) => e.relativePath);
+      assert.ok(paths.includes("child/keep.txt"), "child/keep.txt should be included");
+      assert.ok(
+        !paths.some((p) => p.includes("cache/x.txt")),
+        "files under child/cache should be ignored by child's .gitignore",
+      );
+    });
+  });
+
   after(async () => {
     await rm(FIXTURE_DIR, { recursive: true, force: true });
   });

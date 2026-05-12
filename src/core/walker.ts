@@ -1,5 +1,5 @@
 // Gitignore-aware recursive directory walker with depth control
-// Returns filtered file paths respecting project ignore patterns
+// Returns filtered file paths respecting project ignore patterns (nested-gitignore-aware)
 
 import { readdir, readFile, stat } from "fs/promises";
 import { join, relative, resolve } from "path";
@@ -16,6 +16,11 @@ export interface FileEntry {
   relativePath: string;
   isDirectory: boolean;
   depth: number;
+}
+
+interface IgnoreScope {
+  ig: Ignore;
+  patterns: string[];
 }
 
 const ALWAYS_IGNORE = new Set([
@@ -38,20 +43,28 @@ const ALWAYS_IGNORE = new Set([
   ".parcel-cache",
 ]);
 
-async function loadIgnoreRules(rootDir: string): Promise<Ignore> {
-  const ig = ignore();
+async function readGitignorePatterns(dir: string): Promise<string[]> {
   try {
-    const content = await readFile(join(rootDir, ".gitignore"), "utf-8");
-    ig.add(content);
+    const content = await readFile(join(dir, ".gitignore"), "utf-8");
+    return content.split(/\r?\n/).filter((line) => line.trim() && !line.startsWith("#"));
   } catch {
+    return [];
   }
-  return ig;
+}
+
+async function loadScopeFor(dir: string, parent: IgnoreScope | null): Promise<IgnoreScope> {
+  const local = await readGitignorePatterns(dir);
+  if (!parent && local.length === 0) return { ig: ignore(), patterns: [] };
+  if (!parent) return { ig: ignore().add(local), patterns: local };
+  if (local.length === 0) return parent;
+  const merged = [...parent.patterns, ...local];
+  return { ig: ignore().add(merged), patterns: merged };
 }
 
 async function walkRecursive(
   dir: string,
   rootDir: string,
-  ig: Ignore,
+  scope: IgnoreScope,
   depth: number,
   maxDepth: number,
   results: FileEntry[],
@@ -64,19 +77,21 @@ async function walkRecursive(
 
     const fullPath = join(dir, entry.name);
     const relPath = relative(rootDir, fullPath).replace(/\\/g, "/");
-    if (ig.ignores(relPath)) continue;
+    if (scope.ig.ignores(relPath)) continue;
 
     const isDir = entry.isDirectory();
     results.push({ path: fullPath, relativePath: relPath, isDirectory: isDir, depth });
 
-    if (isDir) await walkRecursive(fullPath, rootDir, ig, depth + 1, maxDepth, results);
+    if (isDir) {
+      const childScope = await loadScopeFor(fullPath, scope);
+      await walkRecursive(fullPath, rootDir, childScope, depth + 1, maxDepth, results);
+    }
   }
 }
 
 export async function walkDirectory(options: WalkOptions): Promise<FileEntry[]> {
   const rootDir = resolve(options.rootDir);
   const startDir = options.targetPath ? resolve(rootDir, options.targetPath) : rootDir;
-  const ig = await loadIgnoreRules(rootDir);
   const results: FileEntry[] = [];
 
   try {
@@ -85,7 +100,21 @@ export async function walkDirectory(options: WalkOptions): Promise<FileEntry[]> 
     return results;
   }
 
-  await walkRecursive(startDir, rootDir, ig, 0, options.depthLimit ?? 0, results);
+  const rootScope = await loadScopeFor(rootDir, null);
+  let startScope = rootScope;
+  if (startDir !== rootDir) {
+    // Build the scope chain from rootDir down to startDir so inherited rules apply.
+    const rel = relative(rootDir, startDir).split(/[\\/]/).filter(Boolean);
+    let cursor = rootDir;
+    let scope = rootScope;
+    for (const segment of rel) {
+      cursor = join(cursor, segment);
+      scope = await loadScopeFor(cursor, scope);
+    }
+    startScope = scope;
+  }
+
+  await walkRecursive(startDir, rootDir, startScope, 0, options.depthLimit ?? 0, results);
   return results;
 }
 
