@@ -304,6 +304,21 @@ describe("walker", () => {
 
       await rm(VEND, { recursive: true, force: true });
     });
+
+    it("reports extraRoot file paths relative to the workspace root", async () => {
+      const { walkRoots } = await import("../../build/core/walker.js");
+      const entries = await walkRoots({
+        rootDir: ROOTS,
+        extraRoots: ["repos/lacuna"],
+      });
+      const fooEntry = entries.find((e) => e.path.endsWith("foo.py"));
+      assert.ok(fooEntry, "expected to find foo.py in results");
+      assert.equal(
+        fooEntry.relativePath,
+        "repos/lacuna/src/foo.py",
+        "relativePath should be rooted at the workspace, not the extraRoot",
+      );
+    });
   });
 
   after(async () => {
