@@ -100,13 +100,6 @@ function buildMcpConfig(runner: "npx" | "bunx") {
         contextplus: {
           command: runner,
           args: commandArgs,
-          env: {
-            OLLAMA_EMBED_MODEL: "nomic-embed-text",
-            OLLAMA_CHAT_MODEL: "gemma2:27b",
-            OLLAMA_API_KEY: "YOUR_OLLAMA_API_KEY",
-            CONTEXTPLUS_EMBED_BATCH_SIZE: "8",
-            CONTEXTPLUS_EMBED_TRACKER: "lazy",
-          },
         },
       },
     },
@@ -125,13 +118,6 @@ function buildOpenCodeConfig(runner: "npx" | "bunx") {
           type: "local",
           command,
           enabled: true,
-          environment: {
-            OLLAMA_EMBED_MODEL: "nomic-embed-text",
-            OLLAMA_CHAT_MODEL: "gemma2:27b",
-            OLLAMA_API_KEY: "YOUR_OLLAMA_API_KEY",
-            CONTEXTPLUS_EMBED_BATCH_SIZE: "8",
-            CONTEXTPLUS_EMBED_TRACKER: "lazy",
-          },
         },
       },
     },

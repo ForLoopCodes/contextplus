@@ -56,7 +56,7 @@ https://github.com/user-attachments/assets/a97a451f-c9b4-468d-b036-15b65fc13e79
 
 ### Quick Start (npx / bunx)
 
-No installation needed. Add Context+ to your IDE MCP config.
+No installation needed. No API keys required. Add Context+ to your IDE MCP config.
 
 For Claude Code, Cursor, and Windsurf, use `mcpServers`:
 
@@ -65,12 +65,7 @@ For Claude Code, Cursor, and Windsurf, use `mcpServers`:
   "mcpServers": {
     "contextplus": {
       "command": "bunx",
-      "args": ["contextplus"],
-      "env": {
-        "OLLAMA_EMBED_MODEL": "nomic-embed-text",
-        "OLLAMA_CHAT_MODEL": "gemma2:27b",
-        "OLLAMA_API_KEY": "YOUR_OLLAMA_API_KEY"
-      }
+      "args": ["contextplus"]
     }
   }
 }
@@ -84,12 +79,7 @@ For VS Code (`.vscode/mcp.json`), use `servers` and `inputs`:
     "contextplus": {
       "type": "stdio",
       "command": "bunx",
-      "args": ["contextplus"],
-      "env": {
-        "OLLAMA_EMBED_MODEL": "nomic-embed-text",
-        "OLLAMA_CHAT_MODEL": "gemma2:27b",
-        "OLLAMA_API_KEY": "YOUR_OLLAMA_API_KEY"
-      }
+      "args": ["contextplus"]
     }
   },
   "inputs": []
@@ -136,20 +126,42 @@ npm run build
 
 ## Embedding Providers
 
-Context+ supports two embedding backends controlled by `CONTEXTPLUS_EMBED_PROVIDER`:
+Context+ supports three embedding backends controlled by `CONTEXTPLUS_EMBED_PROVIDER`:
 
 | Provider | Value | Requires | Best For |
 |----------|-------|----------|----------|
-| **Ollama** (default) | `ollama` | Local Ollama server | Free, offline, private |
+| **Local** (default) | `local` | Nothing — runs in-process | Zero-config, offline, private |
+| **Ollama** | `ollama` | Local Ollama server | Larger models, GPU acceleration |
 | **OpenAI-compatible** | `openai` | API key | Gemini (free tier), OpenAI, Groq, vLLM |
 
-### Ollama (Default)
+### Local (Default)
 
-No extra configuration needed. Just run Ollama with an embedding model:
+No configuration needed. Uses `nomic-ai/nomic-embed-text-v1.5` via Hugging Face Transformers.js (ONNX runtime). The model (~135MB quantized) auto-downloads on first use and runs entirely in-process on CPU.
+
+> **Note:** First run takes 5-10s for model download. Subsequent starts are instant. Embeddings are cached to `.mcp_data/` so files are only embedded once.
+
+### Ollama (GPU-accelerated)
+
+For faster embeddings on larger codebases, use Ollama with GPU:
 
 ```bash
 ollama pull nomic-embed-text
 ollama serve
+```
+
+```json
+{
+  "mcpServers": {
+    "contextplus": {
+      "command": "npx",
+      "args": ["-y", "contextplus"],
+      "env": {
+        "CONTEXTPLUS_EMBED_PROVIDER": "ollama",
+        "OLLAMA_EMBED_MODEL": "nomic-embed-text"
+      }
+    }
+  }
+}
 ```
 
 ### Google Gemini (Free Tier)
@@ -222,7 +234,7 @@ Any endpoint implementing the [OpenAI Embeddings API](https://platform.openai.co
 
 Three layers built with TypeScript over stdio using the Model Context Protocol SDK:
 
-**Core** (`src/core/`) - Multi-language AST parsing (tree-sitter, 43 extensions), gitignore-aware traversal, Ollama vector embeddings with disk cache, wikilink hub graph, in-memory property graph with decay scoring.
+**Core** (`src/core/`) - Multi-language AST parsing (tree-sitter, 43 extensions), gitignore-aware traversal, local vector embeddings (Hugging Face Transformers.js) with disk cache, wikilink hub graph, in-memory property graph with decay scoring.
 
 **Tools** (`src/tools/`) - 17 MCP tools exposing structural, semantic, operational, and memory graph capabilities.
 
@@ -234,7 +246,7 @@ Three layers built with TypeScript over stdio using the Model Context Protocol S
 
 | Variable                                | Type                      | Default                                | Description                                                   |
 | --------------------------------------- | ------------------------- | -------------------------------------- | ------------------------------------------------------------- |
-| `CONTEXTPLUS_EMBED_PROVIDER`            | string                    | `ollama`                               | Embedding backend: `ollama` or `openai`                      |
+| `CONTEXTPLUS_EMBED_PROVIDER`            | string                    | `local`                                | Embedding backend: `local`, `ollama`, or `openai`            |
 | `OLLAMA_EMBED_MODEL`                    | string                    | `nomic-embed-text`                     | Ollama embedding model                                        |
 | `OLLAMA_API_KEY`                        | string                    | -                                      | Ollama Cloud API key                                          |
 | `OLLAMA_CHAT_MODEL`                     | string                    | `llama3.2`                             | Ollama chat model for cluster labeling                        |

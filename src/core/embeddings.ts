@@ -1,9 +1,10 @@
 // Multi-provider vector embedding engine with cosine similarity search
-// Supports Ollama (local) and OpenAI-compatible APIs (Gemini, OpenAI, etc.)
+// Supports local (zero-config), Ollama, and OpenAI-compatible APIs
 // Indexes file headers and symbols, caches embeddings to disk for speed
 
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { localEmbed } from "./local-embeddings.js";
 
 const EMBED_TIMEOUT_MS = 60_000;
 let embedAbortController = new AbortController();
@@ -74,13 +75,13 @@ export interface EmbeddingCache {
   [path: string]: { hash: string; vector: number[] };
 }
 
-const EMBED_PROVIDER = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "ollama").toLowerCase();
+const EMBED_PROVIDER = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "local").toLowerCase();
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const OPENAI_EMBED_MODEL = process.env.CONTEXTPLUS_OPENAI_EMBED_MODEL ?? process.env.OPENAI_EMBED_MODEL ?? "text-embedding-3-small";
 const OPENAI_API_KEY = process.env.CONTEXTPLUS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? "";
 const OPENAI_BASE_URL = process.env.CONTEXTPLUS_OPENAI_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
 const CACHE_DIR = ".mcp_data";
-const ACTIVE_EMBED_MODEL = EMBED_PROVIDER === "openai" ? OPENAI_EMBED_MODEL : EMBED_MODEL;
+const ACTIVE_EMBED_MODEL = EMBED_PROVIDER === "openai" ? OPENAI_EMBED_MODEL : EMBED_PROVIDER === "local" ? "nomic-embed-text-v1.5" : EMBED_MODEL;
 const CACHE_FILE = `embeddings-cache-${EMBED_PROVIDER}-${ACTIVE_EMBED_MODEL.replace(/[^a-zA-Z0-9._-]/g, "_")}.json`;
 const MIN_EMBED_BATCH_SIZE = 5;
 const MAX_EMBED_BATCH_SIZE = 10;
@@ -133,9 +134,16 @@ async function callOpenAIEmbed(input: string[], signal: AbortSignal): Promise<nu
   return data.data.map((item) => item.embedding);
 }
 
+async function callLocalEmbed(input: string[], _signal: AbortSignal): Promise<number[][]> {
+  return localEmbed(input);
+}
+
 async function callProviderEmbed(input: string[], signal: AbortSignal): Promise<number[][]> {
   if (EMBED_PROVIDER === "openai") {
     return callOpenAIEmbed(input, signal);
+  }
+  if (EMBED_PROVIDER === "local") {
+    return callLocalEmbed(input, signal);
   }
   return callOllamaEmbed(input, signal);
 }

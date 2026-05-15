@@ -16,14 +16,17 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "@huggingface/transformers": "^3.4.1",
     "claude": "^0.1.2",
     "ignore": "^7.0.4",
     "ml-matrix": "^6.12.1",
-    "ollama": "^0.6.3",
     "simple-git": "^3.27.0",
     "tree-sitter-wasms": "^0.1.13",
     "web-tree-sitter": "^0.20.8",
     "zod": "^3.25.23"
+  },
+  "optionalDependencies": {
+    "ollama": "^0.6.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",

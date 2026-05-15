@@ -28,7 +28,7 @@ interface ClusterNode {
   children: ClusterNode[];
 }
 
-const EMBED_PROVIDER = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "ollama").toLowerCase();
+const EMBED_PROVIDER = (process.env.CONTEXTPLUS_EMBED_PROVIDER ?? "local").toLowerCase();
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
 const CHAT_MODEL = process.env.OLLAMA_CHAT_MODEL ?? "llama3.2";
 const OPENAI_CHAT_MODEL = process.env.CONTEXTPLUS_OPENAI_CHAT_MODEL ?? process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini";
@@ -68,7 +68,17 @@ function isNavigableSourceCandidate(filePath: string): boolean {
   return isSupportedFile(filePath) && !NON_CODE_NAVIGATE_EXTENSIONS.has(extname(filePath).toLowerCase());
 }
 
+function isChatAvailable(): boolean {
+  if (EMBED_PROVIDER === "openai" && OPENAI_API_KEY) return true;
+  if (EMBED_PROVIDER === "ollama") return true;
+  return false;
+}
+
 async function chatCompletion(prompt: string): Promise<string> {
+  if (!isChatAvailable()) {
+    throw new Error("no-chat-model");
+  }
+
   if (EMBED_PROVIDER === "openai") {
     const url = `${OPENAI_BASE_URL.replace(/\/+$/, "")}/chat/completions`;
     const response = await fetch(url, {
@@ -170,7 +180,7 @@ Respond with ONLY a JSON array of ${clusters.length} objects. No other text.`;
   try {
     const response = await chatCompletion(prompt);
     const jsonMatch = response.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return clusters.map((_, i) => `Cluster ${i + 1}`);
+    if (!jsonMatch) return clusters.map((c, i) => c.pathPattern ?? `Cluster ${i + 1}`);
     const labels = JSON.parse(jsonMatch[0]) as { label: string }[];
     return labels.map((l, i) => {
       const pp = clusters[i].pathPattern;
